@@ -7,11 +7,11 @@ public class Driver {
 
     private int experience;
     private int racecraft;
-    private int awareness;
     private int pace;
+    private int awareness;
 
     public Driver(int driverId, int teamId, String name, int carNumber, String portraitPath,
-                  int experience, int racecraft, int awareness, int pace) {
+                  int experience, int racecraft, int pace, int awareness) {
                 this.driverId = driverId;
                 this.teamId = teamId;
                 this.name = name;
@@ -19,8 +19,8 @@ public class Driver {
                 this.portraitPath = portraitPath;
                 this.experience = experience;
                 this.racecraft = racecraft;
-                this.awareness = awareness;
                 this.pace = pace;
+                this.awareness = awareness;
             }
 
     public int getDriverId() {
@@ -51,11 +51,11 @@ public class Driver {
         return racecraft;
     }
 
-    public int getAwareness() {
-        return awareness;
-    }
-
     public int getPace() {
         return pace;
+    }
+
+    public int getAwareness() {
+        return awareness;
     }
 }
