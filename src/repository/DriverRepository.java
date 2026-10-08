@@ -4,11 +4,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.ArrayList;
 
 import database.Database;
 import model.Driver;
-
-import java.util.ArrayList;
 
 public class DriverRepository {
     List<Driver> driverList;
