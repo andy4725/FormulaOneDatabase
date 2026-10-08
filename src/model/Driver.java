@@ -1,3 +1,4 @@
+package model;
 public class Driver {
     private int driverId;
     private int teamId;

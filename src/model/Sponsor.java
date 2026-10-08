@@ -1,3 +1,5 @@
+package model;
+
 public class Sponsor {
     private int sponsorId;
     private int teamId;
