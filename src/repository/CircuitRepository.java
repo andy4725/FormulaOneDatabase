@@ -15,7 +15,7 @@ public class CircuitRepository {
     public List<Circuit> getCircuits() throws SQLException {
         circuitList = new ArrayList<>();
 
-        String sql = "SELECT circuit_id, name, country, length, race_laps, quali_benchmark_time, race_benchmark_time " +
+        String sql = "SELECT circuit_id, name, country, length, race_laps, quali_benchmark_sec, race_benchmark_sec " +
                      "FROM circuits " +
                      "ORDER BY name";
 
@@ -29,8 +29,8 @@ public class CircuitRepository {
                 String country = results.getString("country");
                 float length = results.getFloat("length");
                 int raceLaps = results.getInt("race_laps");
-                float qualiBenchmarkTime = results.getFloat("quali_benchmark_time");
-                float raceBenchmarkTime = results.getFloat("race_benchmark_time");
+                float qualiBenchmarkTime = results.getFloat("quali_benchmark_sec");
+                float raceBenchmarkTime = results.getFloat("race_benchmark_sec");
 
                 Circuit circuit = new Circuit(circuitId, name, country, length, raceLaps, qualiBenchmarkTime, raceBenchmarkTime);
                 circuitList.add(circuit);

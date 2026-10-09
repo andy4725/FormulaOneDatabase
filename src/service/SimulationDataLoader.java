@@ -13,8 +13,8 @@ public class SimulationDataLoader {
         return new SimulationData(
             new DriverRepository().getDrivers(),
             new TeamRepository().getTeams(),
-            new SponsorRepository().getSponsor(),
-            new CircuitRepository().getCircuits()
+            new CircuitRepository().getCircuits(),
+            new SponsorRepository().getSponsor()
         );
     }
 }

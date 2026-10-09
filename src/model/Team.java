@@ -30,7 +30,7 @@ public class Team {
     }
 
     public int getPace() {
-        return pace;
+        return Math.round(pace * (1 + sponsorModifier));
     }
 
     public int getReliability() {
