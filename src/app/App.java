@@ -5,32 +5,30 @@ import java.sql.SQLException;
 import model.SimulationData;
 import service.QualifyingSimulator;
 import service.SimulationDataLoader;
-import model.Team;
 import model.Circuit;
 import model.QualifyingResult;
 
 import java.util.List;
 
 public class App {
+    private static int roundNumber = 0;
     public static void main(String[] args) throws SQLException {
         SimulationData data = new SimulationDataLoader().load();
-        Circuit monaco = null;
+        Circuit currentCircuit = null;
+        List<Circuit> circuits = data.getCircuits();
+        
+        currentCircuit = circuits.get(roundNumber);
 
-        for(Circuit circuit : data.getCircuits()) {
-            if("Monaco".equals(circuit.getCountry())) {
-                monaco = circuit;
-                break;
-            }
+        if(currentCircuit == null) {
+            throw new IllegalArgumentException("Circuit couldn't be loaded.");
         }
 
-        if(monaco == null) {
-            throw new IllegalArgumentException("Monaco wasn't found.");
-        }
+        String name = currentCircuit.getName();
 
         List<QualifyingResult> results = 
-            new QualifyingSimulator().simulate(monaco, data.getDrivers(), data.getTeams());
+            new QualifyingSimulator().simulate(currentCircuit, data.getDrivers(), data.getTeams());
 
-        System.out.println("Monaco qualifying - benchmark: " + monaco.getQualiBenchmarkTime() + " s");
+        System.out.println(name + " qualifying - benchmark: " + currentCircuit.getQualiBenchmarkTime() + " s");
 
         for(int i = 0; i < results.size(); i++) {
             QualifyingResult result = results.get(i);
