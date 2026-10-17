@@ -146,7 +146,7 @@ public class QualifyingService {
             statement.setString(4, eliminatedInSession);
         }
 
-        statement.setDouble(5, result.getLapTimeSeconds());
+        statement.setDouble(5, roundToMilliseconds(result.getLapTimeSeconds()));
         statement.addBatch();
     }
 
@@ -174,6 +174,10 @@ public class QualifyingService {
         }
     }
 
+    private double roundToMilliseconds(double seconds) {
+        return Math.round(seconds * 1000.0) / 1000.0;
+    }
+
     private void insertSessionLaps(
             Connection connection,
             int seasonEventId,
@@ -192,7 +196,7 @@ public class QualifyingService {
                     statement.setInt(2, result.getDriver().getDriverId());
                     statement.setString(3, session);
                     statement.setInt(4, lap + 1);
-                    statement.setDouble(5, result.getLapTimes().get(lap));
+                    statement.setDouble(5, roundToMilliseconds(result.getLapTimes().get(lap)));
                     statement.addBatch();
                 }
             }
