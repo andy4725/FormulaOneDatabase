@@ -21,12 +21,14 @@ class SponsorRow extends JPanel {
     private final String name;
     private final BufferedImage logo;
     private final Color accent;
+    private final Color plate; // fixed plate colour, or null
     private final String number;
 
     SponsorRow(String name, BufferedImage logo, Color accent, int number) {
         this.name = name == null ? "" : name;
         this.logo = logo;
         this.accent = accent;
+        this.plate = TeamStyle.plateOverride(name);
         this.number = String.format("%02d", Integer.valueOf(number));
 
         setOpaque(false);
@@ -49,7 +51,7 @@ class SponsorRow extends JPanel {
             // Logo on a light plate, or a coloured dot if there is no logo.
             int textX;
             if (logo != null) {
-                TeamStyle.drawLogo(g2, logo, 12, (h - 56) / 2, 120, 56);
+                TeamStyle.drawLogo(g2, logo, 12, (h - 56) / 2, 120, 56, plate);
                 textX = 148;
             } else {
                 g2.setColor(accent);

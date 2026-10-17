@@ -6,6 +6,7 @@ import java.awt.Graphics2D;
 import java.awt.FontMetrics;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -102,6 +103,29 @@ final class TeamStyle {
         return result;
     }
 
+    // Sponsors that always get a fixed plate colour (instead of the
+    // automatic one). Key: part of the sponsor name, lower case, no spaces.
+    // To add another sponsor, add one more put(...) line.
+    private static final Map<String, Color> PLATE_OVERRIDES =
+            new HashMap<String, Color>();
+    static {
+        PLATE_OVERRIDES.put("microsoft", new Color(82, 86, 96)); // grey
+    }
+
+    /** Fixed plate colour for this sponsor, or null for the automatic one. */
+    static Color plateOverride(String name) {
+        if (name == null) {
+            return null;
+        }
+        String key = name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        for (Map.Entry<String, Color> entry : PLATE_OVERRIDES.entrySet()) {
+            if (key.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
     // Remembers the plate colour chosen for each logo.
     private static final Map<BufferedImage, Color> PLATE_COLOURS =
             new WeakHashMap<BufferedImage, Color>();
@@ -169,7 +193,13 @@ final class TeamStyle {
      */
     static void drawLogo(Graphics2D g, BufferedImage logo,
             int x, int y, int w, int h) {
-        g.setColor(plateColour(logo));
+        drawLogo(g, logo, x, y, w, h, null);
+    }
+
+    /** Same, but with a fixed plate colour (null = choose automatically). */
+    static void drawLogo(Graphics2D g, BufferedImage logo,
+            int x, int y, int w, int h, Color plate) {
+        g.setColor(plate != null ? plate : plateColour(logo));
         g.fillRoundRect(x, y, w, h, 12, 12);
 
         // Thin light outline, so a dark plate does not vanish into the card.
