@@ -49,6 +49,8 @@ public class App {
         List<QualifyingResult> q3Results = simulateSession(
             service, event, circuit, "Q3", q3Drivers, data);
 
+        service.saveFinalResults(event.seasonEventId, q1Results, q2Results, q3Results);
+
         printResults("Q1", q1Results);
         printResults("Q2", q2Results);
         printResults("Q3", q3Results);

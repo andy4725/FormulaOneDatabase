@@ -43,7 +43,7 @@ public class QualifyingService {
 
         List<QualifyingResult> results = simulator.simulateWithLapCounts(circuit, drivers, teams, lapCountsByDriver);
 
-        saveSession(seasonEventId, session, results);
+        saveSessionLaps(seasonEventId, session, results);
         return results;
     }
 
@@ -56,25 +56,98 @@ public class QualifyingService {
         }
     }
 
-    private void saveSession(
-            int seasonEventId,
-            String session,
-            List<QualifyingResult> results) throws SQLException {
+    private void saveSessionLaps(
+        int seasonEventId,
+        String session,
+        List<QualifyingResult> results) throws SQLException {
 
         try (Connection connection = Database.getConnection()) {
             connection.setAutoCommit(false);
 
             try {
                 deleteSessionLaps(connection, seasonEventId, session);
-                deleteEventResults(connection, seasonEventId);
                 insertSessionLaps(connection, seasonEventId, session, results);
-                insertResults(connection, seasonEventId, results);
                 connection.commit();
             } catch (SQLException | RuntimeException e) {
                 connection.rollback();
                 throw e;
             }
         }
+    }
+
+    public void saveFinalResults(
+        int seasonEventId,
+        List<QualifyingResult> q1Results,
+        List<QualifyingResult> q2Results,
+        List<QualifyingResult> q3Results) throws SQLException {
+
+        if (q1Results == null || q2Results == null || q3Results == null
+                || q2Results.size() > q1Results.size()
+                || q3Results.size() > q2Results.size()) {
+            throw new IllegalArgumentException("Qualifying results are incomplete.");
+        }
+
+        String sql =
+            "INSERT INTO qualifying_results " +
+            "(season_event_id, driver_id, final_position, eliminated_in_session, best_lap_seconds) " +
+            "VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection connection = Database.getConnection()) {
+            connection.setAutoCommit(false);
+
+            try {
+                deleteEventResults(connection, seasonEventId);
+
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    int position = 1;
+
+                    // Q3 participants: positions 1–10, with no elimination session.
+                    for (QualifyingResult result : q3Results) {
+                        addFinalResult(statement, seasonEventId, position++, result, null);
+                    }
+
+                    // Drivers eliminated in Q2: next positions, ordered by their Q2 times.
+                    for (int i = q3Results.size(); i < q2Results.size(); i++) {
+                        addFinalResult(
+                            statement, seasonEventId, position++, q2Results.get(i), "Q2");
+                    }
+
+                    // Drivers eliminated in Q1: remaining positions, ordered by their Q1 times.
+                    for (int i = q2Results.size(); i < q1Results.size(); i++) {
+                        addFinalResult(
+                            statement, seasonEventId, position++, q1Results.get(i), "Q1");
+                    }
+
+                    statement.executeBatch();
+                }
+
+                connection.commit();
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
+    private void addFinalResult(
+            PreparedStatement statement,
+            int seasonEventId,
+            int position,
+            QualifyingResult result,
+            String eliminatedInSession) throws SQLException {
+
+        statement.setInt(1, seasonEventId);
+        statement.setInt(2, result.getDriver().getDriverId());
+        statement.setInt(3, position);
+
+        if (eliminatedInSession == null) {
+            statement.setNull(4, java.sql.Types.VARCHAR);
+        } else {
+            statement.setString(4, eliminatedInSession);
+        }
+
+        statement.setDouble(5, result.getLapTimeSeconds());
+        statement.addBatch();
     }
 
     private void deleteSessionLaps(
@@ -122,29 +195,6 @@ public class QualifyingService {
                     statement.setDouble(5, result.getLapTimes().get(lap));
                     statement.addBatch();
                 }
-            }
-            statement.executeBatch();
-        }
-    }
-
-    private void insertResults(
-            Connection connection,
-            int seasonEventId,
-            List<QualifyingResult> results) throws SQLException {
-
-        String sql =
-            "INSERT INTO qualifying_results " +
-            "(season_event_id, driver_id, final_position, best_lap_seconds) " +
-            "VALUES (?, ?, ?, ?)";
-
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            for (int position = 0; position < results.size(); position++) {
-                QualifyingResult result = results.get(position);
-                statement.setInt(1, seasonEventId);
-                statement.setInt(2, result.getDriver().getDriverId());
-                statement.setInt(3, position + 1);
-                statement.setDouble(4, result.getLapTimeSeconds());
-                statement.addBatch();
             }
             statement.executeBatch();
         }
