@@ -22,7 +22,7 @@ public class SeasonService {
                 if(!slotExists(connection, slotId))
                     throw new IllegalArgumentException("That save slot does not exist.");
 
-                if(seasonExists)
+                if(seasonExists(connection, slotId))
                     throw new IllegalArgumentException("This slot already has a season");
 
                 List<Integer> calendar = getSeasonCalendar();
@@ -71,7 +71,7 @@ public class SeasonService {
             "SELECT grand_prix.grand_prix_id " +
             "FROM grand_prix " +
             "JOIN circuits ON grand_prix.circuit_id = circuits.circuit_id " +
-            "ORDER BY circuits.circuit.id";
+            "ORDER BY circuits.circuit_id";
 
         try(Connection connection = Database.getConnection();
             PreparedStatement statement = connection.prepareStatement(sql);
@@ -87,7 +87,7 @@ public class SeasonService {
     private int insertSeason(Connection connection, int slotId) throws SQLException {
         String sql =
             "INSERT INTO seasons (save_slot_id, status) " +
-            "VALUES (?, IN_PROGRESS)";
+            "VALUES (?, 'IN_PROGRESS')";
 
         try(PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, slotId);
@@ -114,6 +114,20 @@ public class SeasonService {
                 statement.setInt(3, grandPrixIds.get(i));
                 statement.executeUpdate();
             }
+        }
+    }
+
+    public void eraseSeason(int slotId) throws SQLException {
+        if (slotId < 1 || slotId > 3) {
+            throw new IllegalArgumentException("Pick a slot between 1 and 3.");
+        }
+
+        String sql = "DELETE FROM seasons WHERE save_slot_id = ?";
+
+        try (Connection connection = Database.getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, slotId);
+            statement.executeUpdate();
         }
     }
 }

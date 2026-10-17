@@ -23,6 +23,9 @@ public class QualifyingSimulator {
     private static final double TIME_FACTOR_PER_RATING_POINT = 0.001;
     private static final double RANDOM_VARIATION = 0.10;
 
+    private static final int LAPS_PER_SESSION = 3;
+    private static final double LAP_VARIATION = 0.002;
+
     private final Random random;
 
     public QualifyingSimulator() {
@@ -38,51 +41,119 @@ public class QualifyingSimulator {
     }
 
     public List<QualifyingResult> simulate(Circuit circuit, List<Driver> drivers, List<Team> teams) {
+        return simulateInternal(circuit, drivers, teams, null);
+    }
+
+    public List<QualifyingResult> simulateWithLapCounts(
+            Circuit circuit,
+            List<Driver> drivers,
+            List<Team> teams,
+            Map<Integer, Integer> lapCountsByDriver) {
+
+        if (lapCountsByDriver == null) {
+            throw new IllegalArgumentException("Lap counts are required.");
+        }
+
+        return simulateInternal(circuit, drivers, teams, lapCountsByDriver);
+    }
+
+    private List<QualifyingResult> simulateInternal(Circuit circuit, List<Driver> drivers, List<Team> teams, Map<Integer, Integer> lapCountsByDriver) {
+        validateInputs(circuit, drivers, teams);
+        Map<Integer, Team> teamsById = indexTeamsById(teams);
+
+        List<QualifyingResult> results = new ArrayList<QualifyingResult>();
+
+        for (Driver driver : drivers) {
+            int lapCount = LAPS_PER_SESSION;
+
+            if (lapCountsByDriver != null) {
+                Integer driverLapCount = lapCountsByDriver.get(driver.getDriverId());
+                if (driverLapCount == null || driverLapCount <= 0) {
+                    throw new IllegalArgumentException(
+                        "A positive lap count is required for " + driver.getName() + ".");
+                }
+                lapCount = driverLapCount;
+            }
+
+            results.add(simulateDriver(circuit, driver, teamsById, lapCount));
+        }
+
+        sortByFastestLap(results);
+        return results;
+    }
+
+    private void validateInputs(Circuit circuit, List<Driver> drivers, List<Team> teams) {
         if(circuit == null || drivers == null || teams == null) {
             throw new IllegalArgumentException("Circuits, drivers and teams are required.");
         }
         if(circuit.getQualiBenchmarkTime() <= 0) {
             throw new IllegalArgumentException("Circuit quali benchmark time is required.");
         }
+    }
 
+    private Map<Integer, Team> indexTeamsById(List<Team> teams) {
         Map<Integer, Team> teamsById = new HashMap<Integer, Team>();
         for(Team team: teams) {
             teamsById.put(team.getTeamId(), team);
         }
 
-        List<QualifyingResult> results = new ArrayList<QualifyingResult>();
+        return teamsById;
+    }
 
-        for(Driver driver: drivers) {
-            Team team = teamsById.get(driver.getTeamId());
-            if(team == null) {
-                throw new IllegalArgumentException("No team found for " + driver.getName() + ".");
-            }
+    private QualifyingResult simulateDriver(Circuit circuit, Driver driver, Map<Integer, Team> teamsById, int lapCount) {
+        Team team = teamsById.get(driver.getTeamId());
+        if (team == null) {
+            throw new IllegalArgumentException(
+                "No team found for " + driver.getName() + ".");
+        }
 
-            double rating = (
+        double performanceRating = calculatePerformanceRating(driver, team);
+        List<Double> lapTimes = simulateLapTimes(circuit, performanceRating, lapCount);
+
+        return new QualifyingResult(driver, performanceRating, lapTimes);
+    }
+
+    private double calculatePerformanceRating(Driver driver, Team team) {
+        double rating = (
                 TEAM_PACE_WEIGHT * team.getPace() +
                 DRIVER_PACE_WEIGHT * driver.getPace() +
                 DRIVER_EXPERIENCE_WEIGHT * driver.getExperience()
-            ) / TOTAL_WEIGHT;
+        ) / TOTAL_WEIGHT;
 
-            // Apply ±10% randomness to performance rating, not lap time.
-            double randomMultiplier = 1.0 + (random.nextDouble() * 2.0 - 1.0) * RANDOM_VARIATION;
-            double effectiveRating = rating * randomMultiplier;
+        // Apply ±10% randomness to performance rating, not lap time.
+        double randomMultiplier = 1.0 + (random.nextDouble() * 2.0 - 1.0) * RANDOM_VARIATION;
+        double effectiveRating = rating * randomMultiplier;
 
-            // 80 is the neutral rating: it produces the circuit benchmark.
-            double lapTime = circuit.getQualiBenchmarkTime()
-                * (1.0 + (BENCHMARK_RATING - effectiveRating)
-                * TIME_FACTOR_PER_RATING_POINT);
+        return effectiveRating;
+    }
 
-            results.add(new QualifyingResult(driver, effectiveRating, lapTime));
+    private List<Double> simulateLapTimes(Circuit circuit, double performanceRating, int lapCount) {
+
+        List<Double> lapTimes = new ArrayList<Double>();
+        for (int lap = 0; lap < lapCount; lap++) {
+            lapTimes.add(calculateLapTime(circuit, performanceRating));
         }
+        return lapTimes;
+    }
 
+    private double calculateLapTime(Circuit circuit, double performanceRating) {
+        double baseLapTime = circuit.getQualiBenchmarkTime()
+            * (1.0 + (BENCHMARK_RATING - performanceRating)
+            * TIME_FACTOR_PER_RATING_POINT);
+        
+        // Apply a small independent variation to each lap.
+        double lapMultiplier = 1.0 + (random.nextDouble() * 2.0 - 1.0) * LAP_VARIATION;
+        double finalLapTime = baseLapTime * lapMultiplier;
+
+        return finalLapTime;
+    }
+
+    private void sortByFastestLap(List<QualifyingResult> results) {
         Collections.sort(results, new Comparator<QualifyingResult>() {
             @Override
             public int compare(QualifyingResult left, QualifyingResult right) {
                 return Double.compare(left.getLapTimeSeconds(), right.getLapTimeSeconds());
             }
         });
-
-        return results;
     }
 }
