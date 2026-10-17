@@ -21,7 +21,7 @@ class Heropanel extends JPanel {
     private final BufferedImage logo = Theme.loadImage("f1-logo.png");
     private final BufferedImage picture = Theme.loadAny("hero");
 
-    HeroPanel() {
+    Heropanel() {
         setOpaque(true);
         setBackground(Theme.HOME_BG);
     }
