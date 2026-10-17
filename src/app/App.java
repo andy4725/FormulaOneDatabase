@@ -1,9 +1,9 @@
-
 package app;
 
-import gui.MainWindow;
 import java.sql.SQLException;
 import javax.swing.SwingUtilities;
+
+import gui.MainMenu.MainWindow;
 import model.SimulationData;
 import service.SimulationDataLoader;
 
@@ -11,12 +11,11 @@ public class App {
 
     public static void main(String[] args) throws SQLException {
 
-        SimulationData data =
+        final SimulationData data =
                 new SimulationDataLoader().load();
 
         if (data.getTeams().isEmpty()) {
-            System.out.println(
-                    "No teams found in the database.");
+            System.out.println("No teams found in the database.");
             return;
         }
 
