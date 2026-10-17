@@ -33,7 +33,7 @@ public class MainWindow extends JFrame implements Navigator {
         content.setBackground(Theme.HOME_BG);
         content.add(new HomePanel(this), Section.HOME.name());
         content.add(new DriversPanel(data), Section.DRIVERS.name());
-        content.add(new TeamsPanel(), Section.TEAMS.name());
+        content.add(new TeamsPanel(data), Section.TEAMS.name());
         content.add(placeholder(
                 "Simulate Race: choose circuit, run, see results"),
                 Section.RACE.name());
