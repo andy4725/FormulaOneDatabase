@@ -5,9 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.ArrayList;
 
 import database.Database;
 import model.Circuit;
+import model.Driver;
 import model.QualifyingResult;
 import model.SimulationData;
 import service.QualifyingService;
@@ -27,33 +29,65 @@ public class App {
                 "No circuit found for season round " + ROUND_NUMBER + ".");
         }
 
-        QualifyingService qualifyingService = new QualifyingService();
-        String[] sessions = {"Q1", "Q2", "Q3"};
-
-        for (String session : sessions) {
-            List<QualifyingResult> results =
-                qualifyingService.simulateAndSave(
-                    event.seasonEventId,
-                    session,
-                    circuit,
-                    data.getDrivers(),
-                    data.getTeams());
-
-            System.out.println(
-                circuit.getName() + " " + session +
-                " qualifying - benchmark: " +
-                circuit.getQualiBenchmarkTime() + " s");
-
-            printResults(results);
-            System.out.println();
-        }
+        runQualifyingSessions(event, circuit, data);
     }
 
-    private static void printResults(List<QualifyingResult> results) {
-        for (int i = 0; i < results.size(); i++) {
+    private static void runQualifyingSessions(
+            SeasonEvent event, Circuit circuit, SimulationData data)
+            throws SQLException {
+
+        QualifyingService service = new QualifyingService();
+
+        List<QualifyingResult> q1Results = simulateSession(
+            service, event, circuit, "Q1", data.getDrivers(), data);
+
+        List<Driver> q2Drivers = advancingDrivers(q1Results, 16);
+        List<QualifyingResult> q2Results = simulateSession(
+            service, event, circuit, "Q2", q2Drivers, data);
+
+        List<Driver> q3Drivers = advancingDrivers(q2Results, 10);
+        List<QualifyingResult> q3Results = simulateSession(
+            service, event, circuit, "Q3", q3Drivers, data);
+
+        printResults("Q1", q1Results);
+        printResults("Q2", q2Results);
+        printResults("Q3", q3Results);
+    }
+
+    private static List<QualifyingResult> simulateSession(
+            QualifyingService service,
+            SeasonEvent event,
+            Circuit circuit,
+            String session,
+            List<Driver> drivers,
+            SimulationData data) throws SQLException {
+
+        return service.simulateAndSave(
+            event.seasonEventId,
+            session,
+            circuit,
+            drivers,
+            data.getTeams());
+    }
+
+    private static List<Driver> advancingDrivers(List<QualifyingResult> sortedResults, int count) {
+        List<Driver> drivers = new ArrayList<Driver>();
+        int advancingCount = Math.min(count, sortedResults.size());
+
+        for(int i = 0; i < advancingCount; i++) {
+            drivers.add(sortedResults.get(i).getDriver());
+        }
+
+        return drivers;
+    }
+
+    private static void printResults(String session, List<QualifyingResult> results) {
+        System.out.println(session + "results:");
+
+        for(int i = 0; i < results.size(); i++) {
             QualifyingResult result = results.get(i);
             double time = result.getLapTimeSeconds();
-            int minutes = (int) (time / 60);
+            int minutes = (int)(time / 60);
             double seconds = time - minutes * 60;
 
             System.out.printf("%2d. %-24s %d:%06.3f%n",
