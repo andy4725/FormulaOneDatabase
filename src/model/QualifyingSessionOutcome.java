@@ -1,7 +1,5 @@
 package model;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public final class QualifyingSessionOutcome {
@@ -13,13 +11,11 @@ public final class QualifyingSessionOutcome {
         String session,
         List<QualifyingResult> results,
         boolean qualifyingComplete) {
-        if (session == null || results == null) {
-            throw new IllegalArgumentException("Session and results are required.");
+
+            this.session = session;
+            this.results = results;
+            this.qualifyingComplete = qualifyingComplete;
         }
-        this.session = session;
-        this.results = Collections.unmodifiableList(
-                new ArrayList<QualifyingResult>(results));
-        this.qualifyingComplete = qualifyingComplete;
 
     public String getSession() {
         return session;

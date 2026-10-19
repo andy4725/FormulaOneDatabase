@@ -7,6 +7,7 @@ import java.sql.Statement;
 /** Provides connections to the project's SQLite database. */
 public final class Database {
     private static final String DATABASE_URL = "jdbc:sqlite:F1Database.sqlite3";
+    private static boolean raceGridSchemaChecked;
 
     private Database() {
     }
@@ -28,10 +29,70 @@ public final class Database {
             } finally {
                 statement.close();
             }
+            ensureRaceGridSchema(connection);
             return connection;
         } catch (SQLException e) {
             connection.close();
             throw e;
+        }
+    }
+
+    private static synchronized void ensureRaceGridSchema(Connection connection)
+            throws SQLException {
+        if (raceGridSchemaChecked) {
+            return;
+        }
+        if (resultStatusIsRequired(connection)) {
+            makeRaceResultStatusNullable(connection);
+        }
+        raceGridSchemaChecked = true;
+    }
+
+    private static boolean resultStatusIsRequired(Connection connection)
+            throws SQLException {
+        try (Statement statement = connection.createStatement();
+             java.sql.ResultSet columns = statement.executeQuery("PRAGMA table_info(race_results)")) {
+            while (columns.next()) {
+                if ("result_status".equals(columns.getString("name"))) {
+                    return columns.getInt("notnull") == 1;
+                }
+            }
+        }
+        throw new SQLException("The race_results.result_status column is missing.");
+    }
+
+    private static void makeRaceResultStatusNullable(Connection connection)
+            throws SQLException {
+        connection.setAutoCommit(false);
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE race_results_new ("
+                    + "season_event_id INTEGER NOT NULL, "
+                    + "driver_id INTEGER NOT NULL, "
+                    + "grid_position INTEGER CHECK (grid_position IS NULL OR grid_position > 0), "
+                    + "finishing_position INTEGER CHECK "
+                    + "(finishing_position IS NULL OR finishing_position > 0), "
+                    + "result_status TEXT CHECK "
+                    + "(result_status IS NULL OR result_status IN ('FINISHED', 'DNF', 'DSQ')), "
+                    + "points REAL NOT NULL DEFAULT 0 CHECK (points >= 0), "
+                    + "fastest_lap INTEGER NOT NULL DEFAULT 0 CHECK (fastest_lap IN (0, 1)), "
+                    + "PRIMARY KEY (season_event_id, driver_id), "
+                    + "UNIQUE (season_event_id, finishing_position), "
+                    + "FOREIGN KEY (season_event_id) REFERENCES season_events(season_event_id) ON DELETE CASCADE, "
+                    + "FOREIGN KEY (driver_id) REFERENCES drivers(driver_id) ON DELETE RESTRICT"
+                    + ")");
+            statement.execute("INSERT INTO race_results_new "
+                    + "(season_event_id, driver_id, grid_position, finishing_position, "
+                    + "result_status, points, fastest_lap) "
+                    + "SELECT season_event_id, driver_id, grid_position, finishing_position, "
+                    + "result_status, points, fastest_lap FROM race_results");
+            statement.execute("DROP TABLE race_results");
+            statement.execute("ALTER TABLE race_results_new RENAME TO race_results");
+            connection.commit();
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(true);
         }
     }
 }
