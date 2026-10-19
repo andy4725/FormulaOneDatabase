@@ -4,10 +4,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.SwingUtilities;
 
 import database.Database;
+import gui.MainMenu.MainWindow;
 import model.Circuit;
 import model.Driver;
 import model.QualifyingResult;
@@ -20,7 +23,24 @@ public class App {
     private static final int ROUND_NUMBER = 1; // Season rounds are 1-based.
 
     public static void main(String[] args) throws SQLException {
-        SimulationData data = new SimulationDataLoader().load();
+        final SimulationData data = new SimulationDataLoader().load();
+
+        if (args.length > 0 && "--ui".equals(args[0])) {
+            if (data.getTeams().isEmpty()) {
+                System.out.println("No teams found in the database.");
+                return;
+            }
+
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    MainWindow window = new MainWindow(data);
+                    window.setVisible(true);
+                }
+            });
+            return;
+        }
+
         SeasonEvent event = findSeasonEvent(SAVE_SLOT_ID, ROUND_NUMBER);
         Circuit circuit = findCircuit(data.getCircuits(), event.circuitId);
 
@@ -76,7 +96,7 @@ public class App {
         List<Driver> drivers = new ArrayList<Driver>();
         int advancingCount = Math.min(count, sortedResults.size());
 
-        for(int i = 0; i < advancingCount; i++) {
+        for (int i = 0; i < advancingCount; i++) {
             drivers.add(sortedResults.get(i).getDriver());
         }
 
@@ -84,12 +104,12 @@ public class App {
     }
 
     private static void printResults(String session, List<QualifyingResult> results) {
-        System.out.println(session + "results:");
+        System.out.println(session + " results:");
 
-        for(int i = 0; i < results.size(); i++) {
+        for (int i = 0; i < results.size(); i++) {
             QualifyingResult result = results.get(i);
             double time = result.getLapTimeSeconds();
-            int minutes = (int)(time / 60);
+            int minutes = (int) (time / 60);
             double seconds = time - minutes * 60;
 
             System.out.printf("%2d. %-24s %d:%06.3f%n",
