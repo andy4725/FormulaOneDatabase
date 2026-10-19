@@ -23,7 +23,6 @@ public class QualifyingSimulator {
     private static final double TIME_FACTOR_PER_RATING_POINT = 0.001;
     private static final double RANDOM_VARIATION = 0.10;
 
-    private static final int LAPS_PER_SESSION = 3;
     private static final double LAP_VARIATION = 0.002;
 
     private final Random random;
@@ -40,11 +39,7 @@ public class QualifyingSimulator {
         this.random = random;
     }
 
-    public List<QualifyingResult> simulate(Circuit circuit, List<Driver> drivers, List<Team> teams) {
-        return simulateInternal(circuit, drivers, teams, null);
-    }
-
-    public List<QualifyingResult> simulateWithLapCounts(
+    public List<QualifyingResult> simulateSession(
             Circuit circuit,
             List<Driver> drivers,
             List<Team> teams,
@@ -54,25 +49,16 @@ public class QualifyingSimulator {
             throw new IllegalArgumentException("Lap counts are required.");
         }
 
-        return simulateInternal(circuit, drivers, teams, lapCountsByDriver);
-    }
-
-    private List<QualifyingResult> simulateInternal(Circuit circuit, List<Driver> drivers, List<Team> teams, Map<Integer, Integer> lapCountsByDriver) {
         validateInputs(circuit, drivers, teams);
         Map<Integer, Team> teamsById = indexTeamsById(teams);
-
         List<QualifyingResult> results = new ArrayList<QualifyingResult>();
 
         for (Driver driver : drivers) {
-            int lapCount = LAPS_PER_SESSION;
+            Integer lapCount = lapCountsByDriver.get(driver.getDriverId());
 
-            if (lapCountsByDriver != null) {
-                Integer driverLapCount = lapCountsByDriver.get(driver.getDriverId());
-                if (driverLapCount == null || driverLapCount <= 0) {
-                    throw new IllegalArgumentException(
-                        "A positive lap count is required for " + driver.getName() + ".");
-                }
-                lapCount = driverLapCount;
+            if (lapCount == null || lapCount <= 0) {
+                throw new IllegalArgumentException(
+                    "A positive lap count is required for " + driver.getName() + ".");
             }
 
             results.add(simulateDriver(circuit, driver, teamsById, lapCount));
@@ -103,8 +89,7 @@ public class QualifyingSimulator {
     private QualifyingResult simulateDriver(Circuit circuit, Driver driver, Map<Integer, Team> teamsById, int lapCount) {
         Team team = teamsById.get(driver.getTeamId());
         if (team == null) {
-            throw new IllegalArgumentException(
-                "No team found for " + driver.getName() + ".");
+            throw new IllegalArgumentException("No team found for " + driver.getName() + ".");
         }
 
         double performanceRating = calculatePerformanceRating(driver, team);

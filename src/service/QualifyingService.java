@@ -41,7 +41,7 @@ public class QualifyingService {
             lapCountsByDriver.put(driver.getDriverId(), chooseLapCount(session));
         }
 
-        List<QualifyingResult> results = simulator.simulateWithLapCounts(circuit, drivers, teams, lapCountsByDriver);
+        List<QualifyingResult> results = simulator.simulateSession(circuit, drivers, teams, lapCountsByDriver);
 
         saveSessionLaps(seasonEventId, session, results);
         return results;

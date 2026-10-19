@@ -47,5 +47,5 @@ public class QualifyingResult {
 
     public List<Double> getLapTimes() {
         return lapTimes;
-        }
+    }
 }

@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Run F1 UI",
+            "request": "launch",
+            "mainClass": "app.App",
+            "args": "--ui"
+        }
+    ]
+}

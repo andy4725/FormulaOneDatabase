@@ -45,8 +45,7 @@ public class App {
         Circuit circuit = findCircuit(data.getCircuits(), event.circuitId);
 
         if (circuit == null) {
-            throw new IllegalStateException(
-                "No circuit found for season round " + ROUND_NUMBER + ".");
+            throw new IllegalStateException("No circuit found for season round " + ROUND_NUMBER + ".");
         }
 
         runQualifyingSessions(event, circuit, data);
@@ -120,9 +119,7 @@ public class App {
         }
     }
 
-    private static SeasonEvent findSeasonEvent(int slotId, int roundNumber)
-            throws SQLException {
-
+    private static SeasonEvent findSeasonEvent(int slotId, int roundNumber) throws SQLException {
         String sql =
             "SELECT se.season_event_id, c.circuit_id " +
             "FROM seasons s " +
