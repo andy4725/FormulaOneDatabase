@@ -7,24 +7,23 @@ import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.image.BufferedImage;
 import java.io.File;
-
 import javax.imageio.ImageIO;
 import javax.swing.JLabel;
 
 /**
  * Colours, fonts and small drawing/loading helpers shared by all screens.
  */
-final class Theme {
+public final class Theme {
 
     // ---------------- Colours ----------------
-    static final Color HOME_BG    = new Color(15, 17, 22);
-    static final Color SIDEBAR_BG = new Color(18, 20, 26);
-    static final Color TILE_BG    = new Color(27, 30, 37);
-    static final Color LINE       = new Color(42, 46, 56);
-    static final Color NAV_HOVER  = new Color(32, 36, 45);
-    static final Color F1_RED     = new Color(225, 6, 0);
-    static final Color TEXT       = new Color(245, 246, 248);
-    static final Color MUTED      = new Color(165, 170, 180);
+    public static final Color HOME_BG    = new Color(15, 17, 22);
+    public static final Color SIDEBAR_BG = new Color(18, 20, 26);
+    public static final Color TILE_BG    = new Color(27, 30, 37);
+    public static final Color LINE       = new Color(42, 46, 56);
+    public static final Color NAV_HOVER  = new Color(32, 36, 45);
+    public static final Color F1_RED     = new Color(225, 6, 0);
+    public static final Color TEXT       = new Color(245, 246, 248);
+    public static final Color MUTED      = new Color(165, 170, 180);
 
     private Theme() {
         // Only static members; no instances needed.
@@ -32,11 +31,11 @@ final class Theme {
 
     // ---------------- Fonts and labels ----------------
 
-    static Font font(int style, int size) {
+    public static Font font(int style, int size) {
         return new Font("SansSerif", style, size);
     }
 
-    static JLabel label(String text, int style, int size, Color color) {
+    public static JLabel label(String text, int style, int size, Color color) {
         JLabel label = new JLabel(text);
         label.setFont(font(style, size));
         label.setForeground(color);
@@ -46,7 +45,7 @@ final class Theme {
     // ---------------- Colours and drawing ----------------
 
     /** 0.0 returns base, 1.0 returns accent. */
-    static Color blend(Color base, Color accent, double amount) {
+    public static Color blend(Color base, Color accent, double amount) {
         int r = (int) (base.getRed() * (1.0 - amount) + accent.getRed() * amount);
         int g = (int) (base.getGreen() * (1.0 - amount) + accent.getGreen() * amount);
         int b = (int) (base.getBlue() * (1.0 - amount) + accent.getBlue() * amount);
@@ -54,7 +53,7 @@ final class Theme {
     }
 
     /** Smooth shapes, text and scaled images. */
-    static void enableQuality(Graphics2D g) {
+    public static void enableQuality(Graphics2D g) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
@@ -64,7 +63,7 @@ final class Theme {
     }
 
     /** Draws an image so it fills the rectangle (cropping the extra). */
-    static void drawCover(Graphics2D g, BufferedImage img,
+    public static void drawCover(Graphics2D g, BufferedImage img,
             int x, int y, int w, int h) {
         double scale = Math.max((double) w / img.getWidth(),
                 (double) h / img.getHeight());
@@ -80,7 +79,7 @@ final class Theme {
     // ---------------- Images ----------------
 
     /** Reads assets/name; returns null if it is missing or unreadable. */
-    static BufferedImage loadImage(String name) {
+    public static BufferedImage loadImage(String name) {
         try {
             File file = new File("assets/" + name);
             if (!file.isFile()) {
@@ -93,7 +92,7 @@ final class Theme {
     }
 
     /** Tries assets/key.jpg, then assets/key.png. */
-    static BufferedImage loadAny(String key) {
+    public static BufferedImage loadAny(String key) {
         BufferedImage image = loadImage(key + ".jpg");
         if (image == null) {
             image = loadImage(key + ".png");

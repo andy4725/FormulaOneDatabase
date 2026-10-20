@@ -48,7 +48,7 @@ class SponsorRow extends JPanel {
             g2.setColor(TeamStyle.CARD_SELECTED);
             g2.fillRoundRect(0, 0, w, h, 12, 12);
 
-            // Logo on a light plate, or a coloured dot if there is no logo.
+            // Logo on a plate, or a coloured dot if there is no logo.
             int textX;
             if (logo != null) {
                 TeamStyle.drawLogo(g2, logo, 12, (h - 56) / 2, 120, 56, plate);

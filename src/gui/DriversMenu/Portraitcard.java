@@ -10,7 +10,6 @@ import java.awt.Graphics2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.Locale;
-
 import javax.swing.JPanel;
 
 /**
@@ -28,7 +27,7 @@ class Portraitcard extends JPanel {
     private int number = -1;
     private Color accent = DriverStyle.RED;
 
-    PortraitCard() {
+    Portraitcard() {
         setOpaque(false);
         setMinimumSize(new Dimension(250, 300));
         setPreferredSize(new Dimension(430, 540));

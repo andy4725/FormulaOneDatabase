@@ -12,7 +12,7 @@ import javax.swing.JPanel;
 /**
  * One statistic: title, number and a coloured bar.
  */
-class Statbar extends JPanel {
+class StatBar extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
@@ -23,7 +23,7 @@ class Statbar extends JPanel {
     private int value = -1; // -1 = nothing selected yet
     private Color accent = DriverStyle.RED;
 
-    Statbar(String title) {
+    StatBar(String title) {
         this.title = title;
         setOpaque(false);
         setPreferredSize(new Dimension(200, 44));
