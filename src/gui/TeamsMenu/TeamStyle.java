@@ -7,6 +7,7 @@ import java.awt.FontMetrics;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -85,11 +86,6 @@ final class TeamStyle {
         return result.toUpperCase(Locale.ROOT);
     }
 
-    /** "1 SPONSOR", "3 SPONSORS". */
-    static String plural(int count, String word) {
-        return count + " " + word + (count == 1 ? "" : "S");
-    }
-
     /** Shortens text with "..." until it fits the width. */
     static String fit(Graphics2D g2, String text, int maxWidth) {
         FontMetrics fm = g2.getFontMetrics();
@@ -101,6 +97,42 @@ final class TeamStyle {
             }
         }
         return result;
+    }
+
+    // Team principal (director) of every team. Key: team name, lower case,
+    // no spaces. To change a director, edit the matching put(...) line.
+    private static final Map<String, String> DIRECTORS =
+            new HashMap<String, String>();
+    static {
+        DIRECTORS.put("mclaren", "Andrea Stella");
+        DIRECTORS.put("ferrari", "Fred Vasseur");
+        DIRECTORS.put("mercedes", "Toto Wolff");
+        DIRECTORS.put("redbullracing", "Laurent Mekies");
+        DIRECTORS.put("racingbulls", "Alan Permane");
+        DIRECTORS.put("williams", "James Vowles");
+        DIRECTORS.put("astonmartin", "Adrian Newey");
+        DIRECTORS.put("alpine", "Flavio Briatore");
+        DIRECTORS.put("haas", "Ayao Komatsu");
+        DIRECTORS.put("audi", "Jonathan Wheatley");
+        DIRECTORS.put("cadillac", "Graeme Lowdon");
+    }
+
+    /** Director of the team, or "-" if the team is not in the list. */
+    static String director(String teamName) {
+        if (teamName == null) {
+            return "-";
+        }
+        String key = teamName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        String result = DIRECTORS.get(key);
+        return result == null ? "-" : result;
+    }
+
+    /** "Lando Norris  /  Oscar Piastri", or "-" without drivers. */
+    static String joinNames(List<String> names) {
+        if (names == null || names.isEmpty()) {
+            return "-";
+        }
+        return String.join("  /  ", names);
     }
 
     // Sponsors that always get a fixed plate colour (instead of the

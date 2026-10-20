@@ -18,13 +18,15 @@ import javax.swing.JPanel;
  *
  * Put your picture in assets/start.jpg (or start.png). If it is missing,
  * assets/hero.jpg is used, and without any picture a dark red design
- * with a big "F1" is drawn.
+ * with assets/f1-logo.png (or a big "F1" text) is drawn.
  */
 class ArtPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
     private final BufferedImage picture;
+
+    private final BufferedImage logo = Theme.loadImage("f1-logo.png");
 
     ArtPanel() {
         BufferedImage image = Theme.loadAny("start");
@@ -76,6 +78,14 @@ class ArtPanel extends JPanel {
         band.addPoint(w, 240);
         band.addPoint(w, 300);
         g2.fillPolygon(band);
+
+        // Logo in the middle, or "F1" text if there is no logo file.
+        if (logo != null) {
+            int lw = Math.min(logo.getWidth(), w * 3 / 5);
+            int lh = logo.getHeight() * lw / logo.getWidth();
+            g2.drawImage(logo, (w - lw) / 2, (h - lh) / 2, lw, lh, null);
+            return;
+        }
 
         String text = "F1";
         g2.setFont(Theme.font(Font.BOLD | Font.ITALIC, 150));

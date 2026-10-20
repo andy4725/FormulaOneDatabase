@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Colours, fonts and small helpers shared by the drivers screen.
@@ -18,26 +20,30 @@ final class DriverStyle {
     static final Color TEXT          = new Color(245, 246, 248);
     static final Color MUTED         = new Color(165, 170, 180);
 
-    // Stand-in team colours: every team ID always gets the same colour.
-    // If your Team class has a real colour, return that in teamColour().
-    private static final Color[] TEAM_COLOURS = {
-        new Color(225, 6, 0),
-        new Color(54, 113, 198),
-        new Color(0, 190, 170),
-        new Color(255, 128, 0),
-        new Color(34, 153, 84),
-        new Color(155, 90, 255),
-        new Color(255, 135, 188),
-        new Color(100, 196, 255),
-        new Color(230, 190, 40),
-        new Color(182, 186, 189)
-    };
+    // Real team colours, keyed by team_id from the teams table.
+    // To add a team, add one more put(...) line.
+    private static final Map<Integer, Color> TEAM_COLOURS =
+            new HashMap<Integer, Color>();
+    static {
+        TEAM_COLOURS.put(1,  new Color(255, 128, 0));   // McLaren (papaya)
+        TEAM_COLOURS.put(2,  new Color(232, 0, 45));    // Ferrari (rosso)
+        TEAM_COLOURS.put(3,  new Color(39, 244, 210));  // Mercedes (teal)
+        TEAM_COLOURS.put(4,  new Color(54, 113, 198));  // Red Bull Racing (blue)
+        TEAM_COLOURS.put(5,  new Color(102, 146, 255)); // Racing Bulls (light blue)
+        TEAM_COLOURS.put(6,  new Color(24, 104, 219));  // Williams (blue)
+        TEAM_COLOURS.put(7,  new Color(34, 153, 113));  // Aston Martin (green)
+        TEAM_COLOURS.put(8,  new Color(255, 135, 188)); // Alpine (pink)
+        TEAM_COLOURS.put(9,  new Color(182, 186, 189)); // Haas (grey)
+        TEAM_COLOURS.put(10, new Color(255, 45, 0));    // Audi (red-orange)
+        TEAM_COLOURS.put(11, new Color(212, 175, 55));  // Cadillac (gold)
+    }
 
     private DriverStyle() {
     }
 
     static Color teamColour(int teamId) {
-        return TEAM_COLOURS[Math.abs(teamId) % TEAM_COLOURS.length];
+        Color colour = TEAM_COLOURS.get(teamId);
+        return colour != null ? colour : MUTED;
     }
 
     static Font font(int style, int size) {

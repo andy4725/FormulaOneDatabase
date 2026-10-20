@@ -19,13 +19,13 @@ import model.Team;
 
 /**
  * Paints one row of the team list: coloured stripe, logo (or initials
- * badge), team name and sponsor count.
+ * badge), team name and driver names.
  */
 class TeamCellRenderer extends JPanel implements ListCellRenderer<Team> {
 
     private static final long serialVersionUID = 1L;
 
-    private final Map<Integer, List<SponsorInfo>> sponsorsByTeam;
+    private final Map<Integer, List<String>> driverNames;
     private final Map<Integer, BufferedImage> teamLogos;
 
     private String name = "";
@@ -35,9 +35,9 @@ class TeamCellRenderer extends JPanel implements ListCellRenderer<Team> {
     private Color accent = TeamStyle.RED;
     private boolean selected = false;
 
-    TeamCellRenderer(Map<Integer, List<SponsorInfo>> sponsorsByTeam,
+    TeamCellRenderer(Map<Integer, List<String>> driverNames,
             Map<Integer, BufferedImage> teamLogos) {
-        this.sponsorsByTeam = sponsorsByTeam;
+        this.driverNames = driverNames;
         this.teamLogos = teamLogos;
         setOpaque(true);
     }
@@ -53,9 +53,7 @@ class TeamCellRenderer extends JPanel implements ListCellRenderer<Team> {
         initials = TeamStyle.initials(name);
         logo = teamLogos.get(id);
 
-        List<SponsorInfo> sponsors = sponsorsByTeam.get(id);
-        int count = sponsors == null ? 0 : sponsors.size();
-        info = TeamStyle.plural(count, "SPONSOR");
+        info = TeamStyle.joinNames(driverNames.get(id));
 
         accent = TeamStyle.teamColour(team.getTeamId());
         selected = isSelected;
@@ -109,7 +107,7 @@ class TeamCellRenderer extends JPanel implements ListCellRenderer<Team> {
                         badgeY + (badgeH + fm.getAscent() - fm.getDescent()) / 2);
             }
 
-            // Name and sponsor count.
+            // Name and driver names.
             int textX = badgeX + badgeW + 14;
             int maxWidth = w - textX - 10;
 
@@ -120,7 +118,8 @@ class TeamCellRenderer extends JPanel implements ListCellRenderer<Team> {
 
             g2.setFont(TeamStyle.font(Font.PLAIN, 11));
             g2.setColor(TeamStyle.MUTED);
-            g2.drawString(info, textX, h / 2 + 14);
+            g2.drawString(TeamStyle.fit(g2, info, maxWidth),
+                    textX, h / 2 + 14);
         } finally {
             g2.dispose();
         }
