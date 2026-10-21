@@ -73,39 +73,47 @@ class SessionStepper extends JPanel {
 
         @Override
         protected void paintComponent(Graphics graphics) {
+            // Work on a copy of the Graphics (the stroke changes below must
+            // not affect other components) and always release it in finally.
             Graphics2D g = (Graphics2D) graphics.create();
-            RaceStyle.enableQuality(g);
-            int w = getWidth();
-            int h = getHeight();
+            try {
+                RaceStyle.enableQuality(g);
+                int w = getWidth();
+                int h = getHeight();
 
-            Color fill = state == LOCKED ? RaceStyle.CARD_DARK : RaceStyle.CARD;
-            g.setColor(fill);
-            g.fillRoundRect(0, 0, w - 1, h - 1, 12, 12);
+                Color fill = state == LOCKED ? RaceStyle.CARD_DARK : RaceStyle.CARD;
+                g.setColor(fill);
+                g.fillRoundRect(0, 0, w - 1, h - 1, 12, 12);
 
-            if (state == FINISHED) {
-                g.setColor(RaceStyle.RED);
-                g.fillRoundRect(0, 0, w - 1, 6, 6, 6);
-                g.fillRect(0, 3, w - 1, 3);
-            } else if (state == NEXT) {
-                g.setColor(RaceStyle.RED);
-                g.setStroke(new BasicStroke(2f));
-                g.drawRoundRect(1, 1, w - 3, h - 3, 12, 12);
-            } else {
-                g.setColor(RaceStyle.LINE);
-                g.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT,
-                        BasicStroke.JOIN_ROUND, 10f, new float[] { 5f, 4f }, 0f));
-                g.drawRoundRect(0, 0, w - 1, h - 1, 12, 12);
+                if (state == FINISHED) {
+                    // Red bar along the top: rounded top corners, square bottom.
+                    g.setColor(RaceStyle.RED);
+                    g.fillRoundRect(0, 0, w - 1, 6, 6, 6);
+                    g.fillRect(0, 3, w - 1, 3);
+                } else if (state == NEXT) {
+                    // Thick red outline around the whole box.
+                    g.setColor(RaceStyle.RED);
+                    g.setStroke(new BasicStroke(2f));
+                    g.drawRoundRect(1, 1, w - 3, h - 3, 12, 12);
+                } else {
+                    // Dashed grey outline: 5px line, 4px gap.
+                    g.setColor(RaceStyle.LINE);
+                    g.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT,
+                            BasicStroke.JOIN_ROUND, 10f, new float[] { 5f, 4f }, 0f));
+                    g.drawRoundRect(0, 0, w - 1, h - 1, 12, 12);
+                }
+
+                String tag = state == FINISHED ? "FINISHED" : state == NEXT ? "UP NEXT" : "LOCKED";
+                g.setFont(RaceStyle.font(Font.BOLD, 11));
+                g.setColor(RaceStyle.MUTED);
+                g.drawString(tag, 16, 26);
+
+                g.setFont(RaceStyle.font(Font.BOLD, 18));
+                g.setColor(state == LOCKED ? RaceStyle.MUTED : RaceStyle.TEXT);
+                g.drawString(name, 16, 48);
+            } finally {
+                g.dispose();
             }
-
-            String tag = state == FINISHED ? "FINISHED" : state == NEXT ? "UP NEXT" : "LOCKED";
-            g.setFont(RaceStyle.font(Font.BOLD, 11));
-            g.setColor(RaceStyle.MUTED);
-            g.drawString(tag, 16, 26);
-
-            g.setFont(RaceStyle.font(Font.BOLD, 18));
-            g.setColor(state == LOCKED ? RaceStyle.MUTED : RaceStyle.TEXT);
-            g.drawString(name, 16, 48);
-            g.dispose();
         }
     }
 }

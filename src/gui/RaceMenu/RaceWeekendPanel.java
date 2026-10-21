@@ -120,6 +120,10 @@ public class RaceWeekendPanel extends JPanel {
         if (busy || event == null) {
             return;
         }
+        // sessionsSaved = sessions already in the database (e.g. from an
+        // earlier visit). sessionsDone = sessions shown to the player so far.
+        // Saved sessions are replayed from the database before new ones
+        // are simulated, so the player always walks through Q1, Q2, Q3.
         if (sessionsDone < sessionsSaved) {
             showSavedSession();
         } else if (sessionsDone < 3) {
@@ -135,6 +139,13 @@ public class RaceWeekendPanel extends JPanel {
     private void simulateNextSession() {
         setBusy(true, "Simulating " + Sessions.name(sessionsDone) + "...");
 
+        // How every SwingWorker on this screen works:
+        // - doInBackground() runs on a separate thread, so the slow work
+        //   (simulation, database) does not freeze the window.
+        // - done() runs back on the Swing thread when the work is finished,
+        //   so it is the safe place to update labels, buttons and the board.
+        // - get() inside done() returns what doInBackground() returned,
+        //   or throws the exception it threw.
         new SwingWorker<QualifyingSessionOutcome, Void>() {
             @Override
             protected QualifyingSessionOutcome doInBackground() throws Exception {
@@ -202,9 +213,13 @@ public class RaceWeekendPanel extends JPanel {
             @Override
             protected void done() {
                 try {
+                    // get() throws if loading failed, so read the grid first.
+                    // Only move on to the race when we really have a grid;
+                    // on an error the player stays on "Go to race" and can retry.
+                    List<QualifyingResult> grid = get();
                     raceStage = true;
                     board.showResults("Starting grid", "Top " + ResultsBoard.SHOWN
-                            + " from qualifying", get());
+                            + " from qualifying", grid);
                 } catch (Exception e) {
                     showError("The starting grid could not be loaded.", e);
                 }
@@ -312,6 +327,10 @@ public class RaceWeekendPanel extends JPanel {
                 "Top " + ResultsBoard.SHOWN, results);
     }
 
+    /**
+     * Refreshes the stepper and the buttons. While busy the buttons are
+     * disabled, so a second click can't start the same work twice.
+     */
     private void setBusy(boolean isBusy, String message) {
         busy = isBusy;
         stepper.setProgress(sessionsDone);

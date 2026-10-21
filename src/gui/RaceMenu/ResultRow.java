@@ -88,28 +88,35 @@ class ResultRow extends JPanel {
 
         @Override
         protected void paintComponent(Graphics graphics) {
+            // Draw on a copy of the Graphics, so the clip set below does not
+            // leak into other components. finally makes sure the copy is
+            // released even if drawing throws an exception.
             Graphics2D g = (Graphics2D) graphics.create();
-            RaceStyle.enableQuality(g);
-            Ellipse2D circle = new Ellipse2D.Double(0, 0, SIZE, SIZE);
+            try {
+                RaceStyle.enableQuality(g);
+                Ellipse2D circle = new Ellipse2D.Double(0, 0, SIZE, SIZE);
 
-            g.setColor(new Color(58, 61, 70));
-            g.fill(circle);
+                g.setColor(new Color(58, 61, 70));
+                g.fill(circle);
 
-            if (image != null) {
-                g.setClip(circle);
-                // Fill the circle, keeping the face (top part of the photo).
-                double scale = Math.max((double) SIZE / image.getWidth(),
-                        (double) SIZE / image.getHeight());
-                int w = (int) Math.round(image.getWidth() * scale);
-                int h = (int) Math.round(image.getHeight() * scale);
-                g.drawImage(image, (SIZE - w) / 2, 0, w, h, null);
-            } else {
-                g.setColor(RaceStyle.MUTED);
-                g.setFont(RaceStyle.font(Font.BOLD, 15));
-                int textW = g.getFontMetrics().stringWidth(initials);
-                g.drawString(initials, (SIZE - textW) / 2, SIZE / 2 + 5);
+                if (image != null) {
+                    // Anything drawn from here on is cut to the circle.
+                    g.setClip(circle);
+                    // Fill the circle, keeping the face (top part of the photo).
+                    double scale = Math.max((double) SIZE / image.getWidth(),
+                            (double) SIZE / image.getHeight());
+                    int w = (int) Math.round(image.getWidth() * scale);
+                    int h = (int) Math.round(image.getHeight() * scale);
+                    g.drawImage(image, (SIZE - w) / 2, 0, w, h, null);
+                } else {
+                    g.setColor(RaceStyle.MUTED);
+                    g.setFont(RaceStyle.font(Font.BOLD, 15));
+                    int textW = g.getFontMetrics().stringWidth(initials);
+                    g.drawString(initials, (SIZE - textW) / 2, SIZE / 2 + 5);
+                }
+            } finally {
+                g.dispose();
             }
-            g.dispose();
         }
 
         private static String initials(String name) {

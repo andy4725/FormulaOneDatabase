@@ -69,6 +69,9 @@ class SlotCard extends JPanel {
                 }
             }
 
+            // A click counts only if the mouse is pressed AND released on the
+            // same spot. Remember here where the press started (bin or card),
+            // and decide what to do in mouseReleased.
             public void mousePressed(MouseEvent e) {
                 pressedOnDelete = overDelete(e);
                 pressed = !pressedOnDelete;
@@ -86,6 +89,8 @@ class SlotCard extends JPanel {
                     return;
                 }
 
+                // hover is false if the mouse was dragged off the card before
+                // releasing; then it was not a real click.
                 boolean click = pressed && hover;
                 pressed = false;
                 repaint();

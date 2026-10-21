@@ -50,15 +50,21 @@ public final class SaveSlots {
     /**
      * Remembers that the slot was chosen. An empty slot gets a new
      * season first.
+     *
+     * Returns false on a database error, so the window can tell the
+     * player instead of opening an empty game. This talks to the
+     * database, so call it from a background thread (SwingWorker).
      */
-    public static void markUsed(int slot) {
+    public static boolean markUsed(int slot) {
         try {
             if (!REPOSITORY.hasSeason(slot)) {
                 SEASONS.startSeason(slot);
             }
             REPOSITORY.touch(slot);
+            return true;
         } catch (SQLException exception) {
             report("open slot " + slot, exception);
+            return false;
         }
     }
 
