@@ -55,6 +55,18 @@ public class QualifyingRepository {
         }
     }
 
+    public int finalResultsCount(int seasonEventId) throws SQLException {
+        validateEventId(seasonEventId);
+        String sql = "SELECT COUNT(*) FROM qualifying_results WHERE season_event_id = ?";
+        try (Connection connection = Database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, seasonEventId);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? result.getInt(1) : 0;
+            }
+        }
+    }
+
     public List<Driver> findAdvancingDrivers(
             int seasonEventId, String session, int limit, List<Driver> allDrivers)
             throws SQLException {

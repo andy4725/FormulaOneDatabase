@@ -1,23 +1,21 @@
 package gui.MainMenu;
 
 import gui.DriversMenu.DriversPanel;
-import gui.TeamsMenu.TeamsPanel;
+import gui.RaceMenu.RaceWeekendPanel;
 import gui.Start.IntroListener;
 import gui.Start.SaveSlots;
 import gui.Start.SlotPanel;
 import gui.Start.StartPanel;
-
+import gui.TeamsMenu.TeamsPanel;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;
 import java.awt.Font;
-
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
-
 import model.SimulationData;
 
 /**
@@ -49,6 +47,8 @@ public class MainWindow extends JFrame implements Navigator, IntroListener {
     // Slot chosen by the player (0 = none yet).
     private int currentSlot = 0;
 
+    private final RaceWeekendPanel racePanel;
+
     public MainWindow(SimulationData data) {
         super("F1 2026 Simulator");
 
@@ -57,9 +57,8 @@ public class MainWindow extends JFrame implements Navigator, IntroListener {
         content.add(new HomePanel(this), Section.HOME.name());
         content.add(new DriversPanel(data), Section.DRIVERS.name());
         content.add(new TeamsPanel(data), Section.TEAMS.name());
-        content.add(placeholder(
-                "Simulate Race: choose circuit, run, see results"),
-                Section.RACE.name());
+        racePanel = new RaceWeekendPanel(data);
+        content.add(racePanel, Section.RACE.name());
         content.add(placeholder(
                 "Standings: driver and team rankings"),
                 Section.STANDINGS.name());
@@ -99,6 +98,7 @@ public class MainWindow extends JFrame implements Navigator, IntroListener {
     public void onSlotChosen(int slot) {
         currentSlot = slot;
         SaveSlots.markUsed(slot);
+        racePanel.showSlot(slot);
         setTitle("F1 2026 Simulator - Slot " + slot);
         showSection(Section.HOME);
         screens.show(root, APP);

@@ -41,6 +41,11 @@ public class NextQualifyingSessionService {
         return new QualifyingSessionOutcome(session, results, complete);
     }
 
+    public boolean isQualifyingComplete(int eventId, int expectedDriverCount)
+            throws SQLException {
+        return repository.finalResultsCount(eventId) == expectedDriverCount;
+    }
+
     private String determineNextQualifyingSession(int eventId) throws SQLException {
         boolean q1Complete = repository.sessionHasLaps(eventId, "Q1");
         boolean q2Complete = repository.sessionHasLaps(eventId, "Q2");

@@ -5,8 +5,8 @@
             "type": "java",
             "name": "Run F1 UI",
             "request": "launch",
-            "mainClass": "app.App",
-            "args": "--ui"
+            "projectName": "FormulaOneDatabase",
+            "mainClass": "app.App"
         }
     ]
 }

@@ -57,7 +57,7 @@ class TeamBanner extends JPanel {
             // Team logo on the right, or big faint initials without a logo.
             int reserved = 0;
             if (logo != null) {
-                TeamStyle.drawLogo(g2, logo, w - 28 - 210, 28, 210, 126);
+                TeamStyle.drawLogo(g2, logo, w - 28 - 210, 28, 210, 126, accent);
                 reserved = 250;
             } else {
                 String initials = TeamStyle.initials(name);

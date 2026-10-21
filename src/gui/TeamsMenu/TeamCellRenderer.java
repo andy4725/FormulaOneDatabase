@@ -93,7 +93,7 @@ class TeamCellRenderer extends JPanel implements ListCellRenderer<Team> {
             int badgeX = 18;
             int badgeY = (h - badgeH) / 2;
             if (logo != null) {
-                TeamStyle.drawLogo(g2, logo, badgeX, badgeY, badgeW, badgeH);
+                TeamStyle.drawLogo(g2, logo, badgeX, badgeY, badgeW, badgeH, accent);
             } else {
                 g2.setColor(TeamStyle.blend(TeamStyle.CARD, accent,
                         selected ? 0.45 : 0.25));
