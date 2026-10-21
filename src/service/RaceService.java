@@ -2,6 +2,7 @@ package service;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 import model.Circuit;
 import model.Driver;
@@ -12,17 +13,32 @@ import repository.RaceRepository;
 public class RaceService {
     private final RaceSimulator simulator;
     private final RaceRepository repository;
+    private final RacePointsCalculator pointsCalculator;
 
     public RaceService() {
-        this(new RaceSimulator(), new RaceRepository());
+        this(new RaceSimulator(), new RaceRepository(),
+                new RacePointsCalculator());
     }
 
-    public RaceService(RaceSimulator simulator, RaceRepository repository) {
-        if (simulator == null || repository == null) {
-            throw new IllegalArgumentException("A simulator and repository are required.");
+    public RaceService(
+            RaceSimulator simulator,
+            RaceRepository repository) {
+        this(simulator, repository, new RacePointsCalculator());
+    }
+
+    public RaceService(
+            RaceSimulator simulator,
+            RaceRepository repository,
+            RacePointsCalculator pointsCalculator) {
+        if (simulator == null || repository == null
+                || pointsCalculator == null) {
+            throw new IllegalArgumentException(
+                    "A simulator, repository, and points calculator are required.");
         }
+
         this.simulator = simulator;
         this.repository = repository;
+        this.pointsCalculator = pointsCalculator;
     }
 
     public List<RaceResult> simulateAndSave(
@@ -32,12 +48,27 @@ public class RaceService {
             List<Team> teams) throws SQLException {
 
         if (seasonEventId <= 0) {
-            throw new IllegalArgumentException("A valid season event ID is required.");
+            throw new IllegalArgumentException(
+                    "A valid season event ID is required.");
         }
 
-        List<RaceResult> results = simulator.simulateRace(seasonEventId, circuit, drivers, teams);
+        Map<Integer, Integer> gridPositions =
+                repository.findGridPositions(seasonEventId);
 
-        repository.saveResults(seasonEventId, results);
+        if (gridPositions.isEmpty()) {
+            throw new IllegalStateException(
+                    "A qualifying grid is required before the race can be simulated.");
+        }
+
+        List<RaceResult> results = simulator.simulateRace(
+                circuit, drivers, teams, gridPositions);
+
+        Map<Integer, Integer> pointsByDriverId =
+                pointsCalculator.calculatePoints(results);
+
+        repository.saveResults(
+                seasonEventId, results, pointsByDriverId);
+
         return results;
     }
 }
