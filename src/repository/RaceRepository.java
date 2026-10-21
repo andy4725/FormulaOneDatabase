@@ -62,11 +62,47 @@ public class RaceRepository {
                         pointsByDriverId,
                         fastestLap);
                 insertLapTimes(connection, seasonEventId, results);
+                markRaceComplete(connection, seasonEventId);
+                markSeasonCompleteIfAllRacesFinished(connection, seasonEventId);
                 connection.commit();
             } catch (SQLException | RuntimeException e) {
                 connection.rollback();
                 throw e;
             }
+        }
+    }
+
+    private void markRaceComplete(
+            Connection connection,
+            int seasonEventId) throws SQLException {
+        String sql = "UPDATE season_events SET status = 'RACE_COMPLETE' "
+                + "WHERE season_event_id = ?";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, seasonEventId);
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException(
+                        "The season event does not exist: " + seasonEventId);
+            }
+        }
+    }
+
+    private void markSeasonCompleteIfAllRacesFinished(
+            Connection connection,
+            int seasonEventId) throws SQLException {
+        String sql = "UPDATE seasons "
+                + "SET status = 'COMPLETED', completed_at = CURRENT_TIMESTAMP "
+                + "WHERE season_id = ("
+                + "SELECT season_id FROM season_events WHERE season_event_id = ?"
+                + ") AND status <> 'COMPLETED' AND NOT EXISTS ("
+                + "SELECT 1 FROM season_events "
+                + "WHERE season_id = seasons.season_id "
+                + "AND status <> 'RACE_COMPLETE'"
+                + ")";
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, seasonEventId);
+            statement.executeUpdate();
         }
     }
 
