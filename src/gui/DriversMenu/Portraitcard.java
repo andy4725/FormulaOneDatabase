@@ -10,7 +10,6 @@ import java.awt.Graphics2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.Locale;
-
 import javax.swing.JPanel;
 
 /**

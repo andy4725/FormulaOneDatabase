@@ -8,18 +8,20 @@ import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.util.List;
 import javax.swing.JPanel;
 
 /**
  * Coloured banner at the top of the team details: team logo (or big
- * initials), team name and a short summary.
+ * initials), team name, its drivers and its team principal.
  */
 class TeamBanner extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
     private String name = "SELECT A TEAM";
-    private String summary = "";
+    private String drivers = "";
+    private String director = "";
     private Color accent = TeamStyle.RED;
     private BufferedImage logo;
 
@@ -29,13 +31,13 @@ class TeamBanner extends JPanel {
         setPreferredSize(new Dimension(100, 210));
     }
 
-    void setTeam(String name, Color accent, int drivers, int sponsors,
-            BufferedImage logo) {
+    void setTeam(String name, Color accent, List<String> drivers,
+            String director, BufferedImage logo) {
         this.name = name == null ? "" : name;
         this.accent = accent;
         this.logo = logo;
-        this.summary = TeamStyle.plural(drivers, "DRIVER")
-                + "   /   " + TeamStyle.plural(sponsors, "SPONSOR");
+        this.drivers = TeamStyle.joinNames(drivers);
+        this.director = director == null ? "-" : director;
         repaint();
     }
 
@@ -55,7 +57,7 @@ class TeamBanner extends JPanel {
             // Team logo on the right, or big faint initials without a logo.
             int reserved = 0;
             if (logo != null) {
-                TeamStyle.drawLogo(g2, logo, w - 28 - 210, 28, 210, 126);
+                TeamStyle.drawLogo(g2, logo, w - 28 - 210, 28, 210, 126, accent);
                 reserved = 250;
             } else {
                 String initials = TeamStyle.initials(name);
@@ -82,14 +84,27 @@ class TeamBanner extends JPanel {
                 size -= 2;
             } while (fm.stringWidth(name) > w - 60 - reserved && size > 16);
             g2.setColor(Color.WHITE);
-            g2.drawString(name, 28, h - 56);
+            g2.drawString(name, 28, h - 78);
 
-            // Summary line.
-            g2.setFont(TeamStyle.font(Font.PLAIN, 12));
-            g2.setColor(TeamStyle.MUTED);
-            g2.drawString(summary, 28, h - 30);
+            // Drivers and director: small grey label, white names.
+            drawInfoLine(g2, "DRIVERS", drivers, h - 48);
+            drawInfoLine(g2, "TEAM PRINCIPAL", director, h - 26);
         } finally {
             g2.dispose();
         }
+    }
+
+    /** "LABEL   value" on one line, the value shortened if too long. */
+    private void drawInfoLine(Graphics2D g2, String label, String value,
+            int y) {
+        g2.setFont(TeamStyle.font(Font.BOLD, 11));
+        g2.setColor(TeamStyle.MUTED);
+        g2.drawString(label, 28, y);
+
+        int valueX = 28 + 120;
+        g2.setFont(TeamStyle.font(Font.PLAIN, 14));
+        g2.setColor(TeamStyle.TEXT);
+        g2.drawString(TeamStyle.fit(g2, value, getWidth() - valueX - 28),
+                valueX, y);
     }
 }

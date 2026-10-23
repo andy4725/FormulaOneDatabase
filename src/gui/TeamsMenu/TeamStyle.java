@@ -7,6 +7,7 @@ import java.awt.FontMetrics;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -24,26 +25,30 @@ final class TeamStyle {
     static final Color TEXT          = new Color(245, 246, 248);
     static final Color MUTED         = new Color(165, 170, 180);
 
-    // Stand-in team colours: every team ID always gets the same colour.
-    // If your Team class has a real colour, return that in teamColour().
-    private static final Color[] TEAM_COLOURS = {
-        new Color(225, 6, 0),
-        new Color(54, 113, 198),
-        new Color(0, 190, 170),
-        new Color(255, 128, 0),
-        new Color(34, 153, 84),
-        new Color(155, 90, 255),
-        new Color(255, 135, 188),
-        new Color(100, 196, 255),
-        new Color(230, 190, 40),
-        new Color(182, 186, 189)
-    };
+    // Real team colours by team ID (same as on the drivers screen).
+    // Also used as the background behind each team logo.
+    private static final Map<Integer, Color> TEAM_COLOURS =
+            new HashMap<Integer, Color>();
+    static {
+        TEAM_COLOURS.put(1,  new Color(255, 128, 0));   // McLaren (papaya)
+        TEAM_COLOURS.put(2,  new Color(232, 0, 45));    // Ferrari (rosso)
+        TEAM_COLOURS.put(3,  new Color(39, 244, 210));  // Mercedes (teal)
+        TEAM_COLOURS.put(4,  new Color(54, 113, 198));  // Red Bull Racing (blue)
+        TEAM_COLOURS.put(5,  new Color(102, 146, 255)); // Racing Bulls (light blue)
+        TEAM_COLOURS.put(6,  new Color(24, 104, 219));  // Williams (blue)
+        TEAM_COLOURS.put(7,  new Color(34, 153, 113));  // Aston Martin (green)
+        TEAM_COLOURS.put(8,  new Color(255, 135, 188)); // Alpine (pink)
+        TEAM_COLOURS.put(9,  new Color(182, 186, 189)); // Haas (grey)
+        TEAM_COLOURS.put(10, new Color(255, 45, 0));    // Audi (red-orange)
+        TEAM_COLOURS.put(11, new Color(212, 175, 55));  // Cadillac (gold)
+    }
 
     private TeamStyle() {
     }
 
     static Color teamColour(int teamId) {
-        return TEAM_COLOURS[Math.abs(teamId) % TEAM_COLOURS.length];
+        Color colour = TEAM_COLOURS.get(teamId);
+        return colour != null ? colour : MUTED;
     }
 
     static Font font(int style, int size) {
@@ -85,11 +90,6 @@ final class TeamStyle {
         return result.toUpperCase(Locale.ROOT);
     }
 
-    /** "1 SPONSOR", "3 SPONSORS". */
-    static String plural(int count, String word) {
-        return count + " " + word + (count == 1 ? "" : "S");
-    }
-
     /** Shortens text with "..." until it fits the width. */
     static String fit(Graphics2D g2, String text, int maxWidth) {
         FontMetrics fm = g2.getFontMetrics();
@@ -101,6 +101,42 @@ final class TeamStyle {
             }
         }
         return result;
+    }
+
+    // Team principal (director) of every team. Key: team name, lower case,
+    // no spaces. To change a director, edit the matching put(...) line.
+    private static final Map<String, String> DIRECTORS =
+            new HashMap<String, String>();
+    static {
+        DIRECTORS.put("mclaren", "Andrea Stella");
+        DIRECTORS.put("ferrari", "Fred Vasseur");
+        DIRECTORS.put("mercedes", "Toto Wolff");
+        DIRECTORS.put("redbullracing", "Laurent Mekies");
+        DIRECTORS.put("racingbulls", "Alan Permane");
+        DIRECTORS.put("williams", "James Vowles");
+        DIRECTORS.put("astonmartin", "Adrian Newey");
+        DIRECTORS.put("alpine", "Flavio Briatore");
+        DIRECTORS.put("haas", "Ayao Komatsu");
+        DIRECTORS.put("audi", "Jonathan Wheatley");
+        DIRECTORS.put("cadillac", "Graeme Lowdon");
+    }
+
+    /** Director of the team, or "-" if the team is not in the list. */
+    static String director(String teamName) {
+        if (teamName == null) {
+            return "-";
+        }
+        String key = teamName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        String result = DIRECTORS.get(key);
+        return result == null ? "-" : result;
+    }
+
+    /** "Lando Norris  /  Oscar Piastri", or "-" without drivers. */
+    static String joinNames(List<String> names) {
+        if (names == null || names.isEmpty()) {
+            return "-";
+        }
+        return String.join("  /  ", names);
     }
 
     // Sponsors that always get a fixed plate colour (instead of the

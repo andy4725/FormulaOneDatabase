@@ -36,6 +36,36 @@ public class RaceRepository {
             }
         }
 
+        if (gridPositions.isEmpty()) {
+            gridPositions = findQualifyingPositions(seasonEventId);
+        }
+
+        return gridPositions;
+    }
+
+    /**
+     * Fallback when the grid was never copied to race_results (e.g. older
+     * saves): the final qualifying classification is the starting grid.
+     */
+    private Map<Integer, Integer> findQualifyingPositions(int seasonEventId) throws SQLException {
+        String sql = "SELECT driver_id, final_position FROM qualifying_results "
+                + "WHERE season_event_id = ? ORDER BY final_position";
+
+        Map<Integer, Integer> gridPositions = new HashMap<Integer, Integer>();
+
+        try (Connection connection = Database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, seasonEventId);
+
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    gridPositions.put(
+                            result.getInt("driver_id"),
+                            result.getInt("final_position"));
+                }
+            }
+        }
+
         return gridPositions;
     }
 

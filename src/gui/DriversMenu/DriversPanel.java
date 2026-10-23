@@ -29,6 +29,7 @@ import model.Driver;
 import model.SimulationData;
 import model.Team;
 
+
 /**
  * Drivers screen.
  *
@@ -48,10 +49,10 @@ public class DriversPanel extends JPanel {
             new JList<Driver>(driverModel);
 
     private final Portraitcard portraitCard = new Portraitcard();
-    private final Statbar experienceBar = new Statbar("EXPERIENCE");
-    private final Statbar racecraftBar  = new Statbar("RACECRAFT");
-    private final Statbar paceBar       = new Statbar("PACE");
-    private final Statbar awarenessBar  = new Statbar("AWARENESS");
+    private final StatBar experienceBar = new StatBar("EXPERIENCE");
+    private final StatBar racecraftBar  = new StatBar("RACECRAFT");
+    private final StatBar paceBar       = new StatBar("PACE");
+    private final StatBar awarenessBar  = new StatBar("AWARENESS");
 
     private final JLabel subtitle = new JLabel("DRIVER DATABASE");
 

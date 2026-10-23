@@ -87,8 +87,11 @@ class Portraitloader {
             String ext = dot < 0 ? ""
                     : filename.substring(dot).toLowerCase(Locale.ROOT);
 
+            // .webp works because lib/webp-imageio adds WebP support to
+            // ImageIO. All the portraits in assets/driver-portraits are .webp,
+            // so without it this name search would never find anything.
             boolean supported = ext.equals(".png") || ext.equals(".jpg")
-                    || ext.equals(".jpeg");
+                    || ext.equals(".jpeg") || ext.equals(".webp");
             if (!supported || !normalize(base).equals(wanted)) {
                 continue;
             }

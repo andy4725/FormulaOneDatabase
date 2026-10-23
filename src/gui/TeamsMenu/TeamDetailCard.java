@@ -61,11 +61,12 @@ class TeamDetailCard extends JPanel {
         add(lower, BorderLayout.CENTER);
     }
 
-    /** Shows one team, its logo and its sponsors. */
-    void showTeam(String teamName, Color accent, int drivers,
-            BufferedImage teamLogo, List<SponsorInfo> sponsors) {
+    /** Shows one team, its logo, drivers, director and sponsors. */
+    void showTeam(String teamName, Color accent, List<String> drivers,
+            String director, BufferedImage teamLogo,
+            List<SponsorInfo> sponsors) {
 
-        banner.setTeam(teamName, accent, drivers, sponsors.size(), teamLogo);
+        banner.setTeam(teamName, accent, drivers, director, teamLogo);
 
         sponsorList.removeAll();
         if (sponsors.isEmpty()) {

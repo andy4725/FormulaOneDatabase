@@ -33,8 +33,9 @@ import model.Team;
 /**
  * Teams screen.
  *
- * Left:  list of teams (logo, name, sponsor count).
- * Right: team banner with logo and the list of the team's sponsors.
+ * Left:  list of teams (logo, name, driver names).
+ * Right: team banner with logo, drivers and team principal, and the
+ *        list of the team's sponsors.
  */
 public class TeamsPanel extends JPanel {
 
@@ -48,19 +49,19 @@ public class TeamsPanel extends JPanel {
     private final JLabel subtitle = new JLabel("TEAM DATABASE");
     private final LogoLoader logoLoader = new LogoLoader();
 
-    // Team ID -> its sponsors / logo / number of drivers.
+    // Team ID -> its sponsors / logo / driver names.
     private final Map<Integer, List<SponsorInfo>> sponsorsByTeam =
             new HashMap<Integer, List<SponsorInfo>>();
     private final Map<Integer, BufferedImage> teamLogos =
             new HashMap<Integer, BufferedImage>();
-    private final Map<Integer, Integer> driverCounts =
-            new HashMap<Integer, Integer>();
+    private final Map<Integer, List<String>> driverNames =
+            new HashMap<Integer, List<String>>();
 
     public TeamsPanel(SimulationData data) {
 
         loadTeamLogos(data);
         groupSponsors(data);
-        countDrivers(data);
+        groupDrivers(data);
 
         setLayout(new BorderLayout(0, 18));
         setBackground(TeamStyle.BACKGROUND);
@@ -115,13 +116,17 @@ public class TeamsPanel extends JPanel {
         }
     }
 
-    /** Counts the drivers of every team. */
-    private void countDrivers(SimulationData data) {
+    /** Collects the driver names of every team. */
+    private void groupDrivers(SimulationData data) {
         for (Driver driver : data.getDrivers()) {
             Integer teamId = Integer.valueOf(driver.getTeamId());
-            Integer old = driverCounts.get(teamId);
-            driverCounts.put(teamId,
-                    Integer.valueOf(old == null ? 1 : old.intValue() + 1));
+
+            List<String> list = driverNames.get(teamId);
+            if (list == null) {
+                list = new ArrayList<String>();
+                driverNames.put(teamId, list);
+            }
+            list.add(driver.getName());
         }
     }
 
@@ -148,12 +153,11 @@ public class TeamsPanel extends JPanel {
             sponsors = new ArrayList<SponsorInfo>();
         }
 
-        Integer drivers = driverCounts.get(id);
-
         detailCard.showTeam(
                 team.getTeamName(),
                 TeamStyle.teamColour(team.getTeamId()),
-                drivers == null ? 0 : drivers.intValue(),
+                driverNames.get(id),
+                TeamStyle.director(team.getTeamName()),
                 teamLogos.get(id),
                 sponsors);
     }
@@ -204,7 +208,7 @@ public class TeamsPanel extends JPanel {
         teamList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         teamList.setFixedCellHeight(72);
         teamList.setCellRenderer(
-                new TeamCellRenderer(sponsorsByTeam, teamLogos));
+                new TeamCellRenderer(driverNames, teamLogos));
 
         // Show the details whenever another team is selected.
         teamList.addListSelectionListener(new ListSelectionListener() {

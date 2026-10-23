@@ -12,7 +12,7 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
 /**
  * Thin dark scroll bar with a rounded thumb and no arrow buttons.
  */
-class DarkScrollBarUI extends BasicScrollBarUI {
+public class DarkScrollBarUI extends BasicScrollBarUI {
 
     protected JButton createDecreaseButton(int orientation) {
         return emptyButton();

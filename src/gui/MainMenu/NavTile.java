@@ -63,6 +63,8 @@ class NavTile extends JPanel {
             }
 
             public void mouseReleased(MouseEvent e) {
+                // Open the section only if the press started on this card
+                // and the mouse is still over it (not dragged away).
                 boolean click = pressed && hover;
                 pressed = false;
                 repaint();

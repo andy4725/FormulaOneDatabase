@@ -45,7 +45,37 @@ public final class Database {
         if (resultStatusIsRequired(connection)) {
             makeRaceResultStatusNullable(connection);
         }
+        ensureSaveSlots(connection);
         raceGridSchemaChecked = true;
+    }
+
+    /** Makes sure save_slots has the last_played column and slots 1-3. */
+    private static void ensureSaveSlots(Connection connection)
+            throws SQLException {
+        if (!hasColumn(connection, "save_slots", "last_played")) {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("ALTER TABLE save_slots ADD COLUMN last_played TEXT");
+            }
+        }
+        try (Statement statement = connection.createStatement()) {
+            for (int slot = 1; slot <= 3; slot++) {
+                statement.execute("INSERT OR IGNORE INTO save_slots (save_slot_id, name) "
+                        + "VALUES (" + slot + ", 'Slot " + slot + "')");
+            }
+        }
+    }
+
+    private static boolean hasColumn(Connection connection, String table, String column)
+            throws SQLException {
+        try (Statement statement = connection.createStatement();
+             java.sql.ResultSet columns = statement.executeQuery("PRAGMA table_info(" + table + ")")) {
+            while (columns.next()) {
+                if (column.equals(columns.getString("name"))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static boolean resultStatusIsRequired(Connection connection)
