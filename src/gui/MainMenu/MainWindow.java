@@ -6,18 +6,15 @@ import gui.Start.IntroListener;
 import gui.Start.SaveSlots;
 import gui.Start.SlotPanel;
 import gui.Start.StartPanel;
+import gui.StandingsMenu.StandingsPanel;
 import gui.TeamsMenu.TeamsPanel;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Font;
-import javax.swing.JComponent;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
 import model.SimulationData;
 
@@ -54,6 +51,7 @@ public class MainWindow extends JFrame implements Navigator, IntroListener {
     private boolean openingSlot = false;
 
     private final RaceWeekendPanel racePanel;
+    private final StandingsPanel standingsPanel;
 
     public MainWindow(SimulationData data) {
         super("F1 2026 Simulator");
@@ -65,9 +63,8 @@ public class MainWindow extends JFrame implements Navigator, IntroListener {
         content.add(new TeamsPanel(data), Section.TEAMS.name());
         racePanel = new RaceWeekendPanel(data);
         content.add(racePanel, Section.RACE.name());
-        content.add(placeholder(
-                "Standings: driver and team rankings"),
-                Section.STANDINGS.name());
+        standingsPanel = new StandingsPanel(data);
+        content.add(standingsPanel, Section.STANDINGS.name());
 
         JPanel app = new JPanel(new BorderLayout());
         app.add(sidebar, BorderLayout.WEST);
@@ -158,17 +155,11 @@ public class MainWindow extends JFrame implements Navigator, IntroListener {
 
     /** Shows one screen and highlights its sidebar button. */
     public void showSection(Section section) {
+        if (section == Section.STANDINGS) {
+            // Reload every time, so races finished since the last visit show up.
+            standingsPanel.showSlot(currentSlot);
+        }
         cards.show(content, section.name());
         sidebar.setCurrent(section);
-    }
-
-    /** Temporary screen for parts that are not built yet. */
-    private JComponent placeholder(String text) {
-        JLabel label = new JLabel(text, SwingConstants.CENTER);
-        label.setFont(Theme.font(Font.PLAIN, 16));
-        label.setForeground(Theme.MUTED);
-        label.setOpaque(true);
-        label.setBackground(Theme.HOME_BG);
-        return label;
     }
 }

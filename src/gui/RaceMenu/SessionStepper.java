@@ -31,11 +31,11 @@ class SessionStepper extends JPanel {
             boxes[i] = new StepBox(NAMES[i]);
             add(boxes[i]);
         }
-        setProgress(0);
+        setProgress(0, false);
     }
 
     /** sessionsDone: 0 to 3 finished qualifying sessions. */
-    void setProgress(int sessionsDone) {
+    void setProgress(int sessionsDone, boolean raceDone) {
         for (int i = 0; i < 3; i++) {
             if (i < sessionsDone) {
                 boxes[i].setState(StepBox.FINISHED);
@@ -45,7 +45,8 @@ class SessionStepper extends JPanel {
                 boxes[i].setState(StepBox.LOCKED);
             }
         }
-        boxes[3].setState(sessionsDone >= 3 ? StepBox.NEXT : StepBox.LOCKED);
+        boxes[3].setState(raceDone ? StepBox.FINISHED
+                : sessionsDone >= 3 ? StepBox.NEXT : StepBox.LOCKED);
         repaint();
     }
 

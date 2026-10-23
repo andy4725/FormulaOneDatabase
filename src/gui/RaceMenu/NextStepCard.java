@@ -16,7 +16,7 @@ import javax.swing.plaf.basic.BasicButtonUI;
 
 /**
  * Card on the right: what comes next, the main button
- * (Start Quali 1 / Go to next session / Go to race / Start race)
+ * (Start Quali 1 / Go to next session / Go to race / Start race / Next weekend)
  * and the "Restart qualifying" button.
  */
 class NextStepCard extends JPanel {
@@ -65,9 +65,11 @@ class NextStepCard extends JPanel {
      * @param hasEvent     there is a weekend to play
      * @param sessionsDone 0..3 finished quali sessions
      * @param raceStage    "Go to race" was already pressed
+     * @param raceDone     the race was simulated and saved
      * @param ready        nothing is running, the buttons can be used
      */
-    void update(boolean hasEvent, int sessionsDone, boolean raceStage, boolean ready) {
+    void update(boolean hasEvent, int sessionsDone, boolean raceStage,
+            boolean raceDone, boolean ready) {
         mainButton.setEnabled(ready);
         restartButton.setEnabled(ready && sessionsDone > 0);
         restartButton.setVisible(!raceStage);
@@ -84,9 +86,12 @@ class NextStepCard extends JPanel {
                     "Go to next session");
         } else if (!raceStage) {
             show("Race", "Qualifying is finished. The grid is set.", "Go to race");
-        } else {
+        } else if (!raceDone) {
             show("Race", "Start the race. The results are saved for Statistics.",
                     "Start race");
+        } else {
+            show("Race finished", "The results and points are saved.",
+                    "Next weekend");
         }
     }
 

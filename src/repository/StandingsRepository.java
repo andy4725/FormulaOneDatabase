@@ -13,6 +13,21 @@ import model.TeamStanding;
 
 public class StandingsRepository {
 
+    /** The newest season of a save slot, or 0 when the slot has none. */
+    public int findSeasonId(int saveSlotId) throws SQLException {
+        String sql = "SELECT season_id FROM seasons WHERE save_slot_id = ? "
+                + "ORDER BY season_id DESC LIMIT 1";
+
+        try (Connection connection = Database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, saveSlotId);
+
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? result.getInt("season_id") : 0;
+            }
+        }
+    }
+
     public List<DriverStanding> getDriverStandings(int seasonId) throws SQLException {
         validateSeasonId(seasonId);
 

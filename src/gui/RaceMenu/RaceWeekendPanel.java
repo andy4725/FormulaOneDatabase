@@ -17,24 +17,28 @@ import javax.swing.SwingWorker;
 import model.Circuit;
 import model.QualifyingResult;
 import model.QualifyingSessionOutcome;
+import model.RaceResult;
 import model.SimulationData;
 import model.Team;
 import model.WeekendEvent;
 import repository.QualifyingRepository;
 import repository.RaceWeekendRepository;
 import service.NextQualifyingSessionService;
+import service.RacePointsCalculator;
+import service.RaceService;
 
 /**
  * Race weekend screen.
  *
  * One button walks through the weekend in a fixed order:
- * Quali 1 -> Quali 2 -> Quali 3 -> Race. Sessions can't be skipped.
- * After every quali session the top 5 is shown. The simulation and the
- * saving to the database are done by NextQualifyingSessionService;
- * this screen only starts it and shows what came back.
+ * Quali 1 -> Quali 2 -> Quali 3 -> Race -> next weekend. Sessions can't
+ * be skipped. After every session all of its drivers are shown. The
+ * simulation and the saving to the database are done by
+ * NextQualifyingSessionService and RaceService; this screen only starts
+ * them and shows what came back.
  *
  * The pieces are in this package:
- * WeekendHeader (top), SessionStepper (the 4 steps), ResultsBoard (top 5),
+ * WeekendHeader (top), SessionStepper (the 4 steps), ResultsBoard (results),
  * NextStepCard (buttons), WeekendLoader (reads the current weekend).
  */
 public class RaceWeekendPanel extends JPanel {
@@ -43,6 +47,8 @@ public class RaceWeekendPanel extends JPanel {
 
     private final SimulationData data;
     private final NextQualifyingSessionService qualifying = new NextQualifyingSessionService();
+    private final RaceService raceService = new RaceService();
+    private final RacePointsCalculator pointsCalculator = new RacePointsCalculator();
     private final RaceWeekendRepository weekendRepository = new RaceWeekendRepository();
     private final QualifyingRepository qualifyingRepository = new QualifyingRepository();
     private final WeekendLoader loader = new WeekendLoader();
@@ -58,6 +64,7 @@ public class RaceWeekendPanel extends JPanel {
     private int sessionsDone;     // 0..3 quali sessions shown to the player
     private int sessionsSaved;    // 0..3 quali sessions already in the database
     private boolean raceStage;    // true after "Go to race"
+    private boolean raceDone;     // true after the race was simulated and saved
     private boolean busy;         // something is running in the background
 
     public RaceWeekendPanel(SimulationData data) {
@@ -130,12 +137,14 @@ public class RaceWeekendPanel extends JPanel {
             simulateNextSession();
         } else if (!raceStage) {
             goToRace();
-        } else {
+        } else if (!raceDone) {
             startRace();
+        } else {
+            loadWeekend(); // the finished race is skipped, so this is the next round
         }
     }
 
-    /** Runs the next quali session in the background, then shows its top 5. */
+    /** Runs the next quali session in the background, then shows its results. */
     private void simulateNextSession() {
         setBusy(true, "Simulating " + Sessions.name(sessionsDone) + "...");
 
@@ -173,7 +182,7 @@ public class RaceWeekendPanel extends JPanel {
         }.execute();
     }
 
-    /** The next session is already in the database: load and show its top 5. */
+    /** The next session is already in the database: load and show its results. */
     private void showSavedSession() {
         final String session = Sessions.CODES[sessionsDone];
         setBusy(true, "Loading " + Sessions.name(sessionsDone) + "...");
@@ -218,8 +227,7 @@ public class RaceWeekendPanel extends JPanel {
                     // on an error the player stays on "Go to race" and can retry.
                     List<QualifyingResult> grid = get();
                     raceStage = true;
-                    board.showResults("Starting grid", "Top " + ResultsBoard.SHOWN
-                            + " from qualifying", grid);
+                    board.showResults("Starting grid", grid.size() + " drivers", grid);
                 } catch (Exception e) {
                     showError("The starting grid could not be loaded.", e);
                 }
@@ -228,13 +236,32 @@ public class RaceWeekendPanel extends JPanel {
         }.execute();
     }
 
+    /** Simulates the race from the saved grid, saves it and shows the result. */
     private void startRace() {
-        // TODO: call the race simulation service here when it exists,
-        // e.g. raceService.simulateAndSave(event.getSeasonEventId(), ...),
-        // then show its result with board.showResults(...).
-        JOptionPane.showMessageDialog(this,
-                "The race simulation is not connected yet.",
-                "Start race", JOptionPane.INFORMATION_MESSAGE);
+        setBusy(true, "Simulating the race...");
+
+        new SwingWorker<List<RaceResult>, Void>() {
+            @Override
+            protected List<RaceResult> doInBackground() throws Exception {
+                // Also marks the round (and the season, if it was the last
+                // round) as complete.
+                return raceService.simulateAndSave(event.getSeasonEventId(),
+                        circuit, data.getDrivers(), data.getTeams());
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    List<RaceResult> results = get();
+                    raceDone = true;
+                    board.showRaceResults("Race results", results.size() + " drivers",
+                            results, pointsCalculator.calculatePoints(results));
+                } catch (Exception e) {
+                    showError("The race could not be simulated.", e);
+                }
+                setBusy(false, null);
+            }
+        }.execute();
     }
 
     /** Deletes this weekend's quali data so it can be simulated again. */
@@ -303,6 +330,7 @@ public class RaceWeekendPanel extends JPanel {
         sessionsSaved = loaded.sessionsDone;
         sessionsDone = Math.min(1, sessionsSaved); // start from Quali 1
         raceStage = false;
+        raceDone = false;
 
         if (event == null) {
             header.showNoWeekend();
@@ -324,7 +352,7 @@ public class RaceWeekendPanel extends JPanel {
 
     private void showSessionResults(List<QualifyingResult> results) {
         board.showResults(Sessions.name(sessionsDone - 1) + " results",
-                "Top " + ResultsBoard.SHOWN, results);
+                results.size() + " drivers", results);
     }
 
     /**
@@ -333,9 +361,9 @@ public class RaceWeekendPanel extends JPanel {
      */
     private void setBusy(boolean isBusy, String message) {
         busy = isBusy;
-        stepper.setProgress(sessionsDone);
+        stepper.setProgress(sessionsDone, raceDone);
         boolean ready = event != null && circuit != null && !busy;
-        nextStep.update(event != null, sessionsDone, raceStage, ready);
+        nextStep.update(event != null, sessionsDone, raceStage, raceDone, ready);
         if (isBusy && message != null) {
             nextStep.showWorking(message);
         }

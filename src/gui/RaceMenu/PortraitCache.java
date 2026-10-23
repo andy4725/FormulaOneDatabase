@@ -18,7 +18,7 @@ import model.Driver;
  * 1. The portrait path stored for the driver (relative to the project).
  * 2. assets/driver-portraits/first-last.webp (or .png / .jpg).
  */
-final class PortraitCache {
+public final class PortraitCache {
 
     private static final String[] EXTENSIONS = { ".webp", ".png", ".jpg" };
 
@@ -27,7 +27,7 @@ final class PortraitCache {
             new HashMap<Integer, BufferedImage>();
 
     /** Returns the portrait, or null if none could be read. */
-    BufferedImage get(Driver driver) {
+    public BufferedImage get(Driver driver) {
         Integer id = Integer.valueOf(driver.getDriverId());
         if (!cache.containsKey(id)) {
             cache.put(id, load(driver));
