@@ -47,7 +47,10 @@ public class RaceWeekendPanel extends JPanel {
 
     private final SimulationData data;
     private final NextQualifyingSessionService qualifying = new NextQualifyingSessionService();
+    // Simulates the race and saves results, points and lap times.
     private final RaceService raceService = new RaceService();
+    // Only used to show the points on the board after the race
+    // (RaceService already saved them in the database).
     private final RacePointsCalculator pointsCalculator = new RacePointsCalculator();
     private final RaceWeekendRepository weekendRepository = new RaceWeekendRepository();
     private final QualifyingRepository qualifyingRepository = new QualifyingRepository();
@@ -140,7 +143,9 @@ public class RaceWeekendPanel extends JPanel {
         } else if (!raceDone) {
             startRace();
         } else {
-            loadWeekend(); // the finished race is skipped, so this is the next round
+            // "Next weekend": reload the screen. The finished race now has
+            // results, so the loader skips it and picks the next round.
+            loadWeekend();
         }
     }
 
@@ -240,11 +245,14 @@ public class RaceWeekendPanel extends JPanel {
     private void startRace() {
         setBusy(true, "Simulating the race...");
 
+        // Same idea as simulateNextSession(): slow work in doInBackground(),
+        // updating the screen in done().
         new SwingWorker<List<RaceResult>, Void>() {
             @Override
             protected List<RaceResult> doInBackground() throws Exception {
-                // Also marks the round (and the season, if it was the last
-                // round) as complete.
+                // Uses the starting grid from qualifying, runs every lap,
+                // saves everything and marks the round (and the season,
+                // if it was the last round) as complete.
                 return raceService.simulateAndSave(event.getSeasonEventId(),
                         circuit, data.getDrivers(), data.getTeams());
             }
@@ -252,8 +260,11 @@ public class RaceWeekendPanel extends JPanel {
             @Override
             protected void done() {
                 try {
+                    // get() throws if the race failed; then raceDone stays
+                    // false and the player can press "Start race" again.
                     List<RaceResult> results = get();
                     raceDone = true;
+                    // The list is already in finishing order (winner first).
                     board.showRaceResults("Race results", results.size() + " drivers",
                             results, pointsCalculator.calculatePoints(results));
                 } catch (Exception e) {
@@ -329,6 +340,7 @@ public class RaceWeekendPanel extends JPanel {
         circuit = loaded.circuit;
         sessionsSaved = loaded.sessionsDone;
         sessionsDone = Math.min(1, sessionsSaved); // start from Quali 1
+        // A freshly loaded weekend always starts before the race.
         raceStage = false;
         raceDone = false;
 

@@ -8,15 +8,10 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.GridLayout;
-import java.awt.Insets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -26,7 +21,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
 
 import model.Driver;
@@ -37,50 +31,73 @@ import repository.StandingsRepository;
 import service.StandingsService;
 
 /**
- * Standings screen: drivers' championship on the left,
- * constructors' championship on the right. The top 3 get
- * gold, silver and bronze rows; drivers are shown with their portrait.
- * The points come from the saved race results of the current slot's season,
- * so call showSlot() every time the screen is opened.
+ * Standings screen.
+ *
+ * Left card:  the drivers' championship (portrait, name, team, points).
+ * Right card: the teams' championship (name, points).
+ *
+ * The top 3 of both lists get a gold, silver or bronze row.
+ * The points are read from the database (the saved race results of
+ * the slot's season), so MainWindow calls showSlot() every time
+ * the screen is opened. That way new races always show up.
  */
 public class StandingsPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
+    // Medal colours for P1, P2 and P3.
     private static final Color GOLD   = new Color(212, 175, 55);
     private static final Color SILVER = new Color(192, 197, 206);
     private static final Color BRONZE = new Color(205, 127, 50);
 
+    // The standings logic already exists in the service layer;
+    // this screen only asks for the lists and shows them.
     private final StandingsService service = new StandingsService();
     private final StandingsRepository repository = new StandingsRepository();
 
-    private final JPanel driverRows = rowsPanel();
-    private final JPanel teamRows = rowsPanel();
+    // The two lists. Rows are added to them in showDrivers() / showTeams().
+    private final JPanel driverRows = new JPanel();
+    private final JPanel teamRows = new JPanel();
 
-    private final PortraitCache portraits = new PortraitCache();
+    // DriverStanding only has the driver's id, but the portrait loader
+    // needs the Driver object, so we keep the drivers by id.
     private final Map<Integer, Driver> driversById = new HashMap<Integer, Driver>();
+    private final PortraitCache portraits = new PortraitCache();
 
     public StandingsPanel(SimulationData data) {
         for (Driver driver : data.getDrivers()) {
             driversById.put(Integer.valueOf(driver.getDriverId()), driver);
         }
 
+        // Dark background with some space around the edges.
         setLayout(new BorderLayout(0, 18));
         setBackground(Theme.HOME_BG);
         setBorder(BorderFactory.createEmptyBorder(22, 28, 22, 28));
 
+        // Title at the top.
         add(Theme.label("Standings", Font.BOLD, 26, Theme.TEXT), BorderLayout.NORTH);
 
-        JPanel tables = new JPanel(new GridLayout(1, 2, 18, 0));
-        tables.setOpaque(false);
-        tables.add(card("Drivers", driverRows));
-        tables.add(card("Teams", teamRows));
-        add(tables, BorderLayout.CENTER);
+        // The two cards side by side, same width.
+        JPanel cards = new JPanel(new GridLayout(1, 2, 18, 0));
+        cards.setOpaque(false);
+        cards.add(card("Drivers", driverRows));
+        cards.add(card("Teams", teamRows));
+        add(cards, BorderLayout.CENTER);
 
         showMessage("Choose a save slot first.");
     }
 
-    /** Reloads the standings of the slot's season in the background. */
+    // =====================================================
+    // Loading
+    // =====================================================
+
+    /** What the background loading returns: both lists at once. */
+    private static class Loaded {
+        List<DriverStanding> drivers;
+        List<TeamStanding> teams;
+    }
+
+    /** Reloads the standings of the slot's season. */
     public void showSlot(final int slot) {
         if (slot <= 0) {
             showMessage("Choose a save slot first.");
@@ -88,73 +105,87 @@ public class StandingsPanel extends JPanel {
         }
         showMessage("Loading...");
 
-        new SwingWorker<Object[], Void>() {
+        // Reading the database can take a moment, so it runs in the
+        // background (doInBackground) and the window is updated
+        // afterwards on the Swing thread (done).
+        new SwingWorker<Loaded, Void>() {
             @Override
-            protected Object[] doInBackground() throws Exception {
+            protected Loaded doInBackground() throws Exception {
                 int seasonId = repository.findSeasonId(slot);
                 if (seasonId <= 0) {
-                    return null;
+                    return null; // this slot has no season yet
                 }
-                return new Object[] {
-                        service.getDriverStandings(seasonId),
-                        service.getTeamStandings(seasonId) };
+                Loaded loaded = new Loaded();
+                loaded.drivers = service.getDriverStandings(seasonId);
+                loaded.teams = service.getTeamStandings(seasonId);
+                return loaded;
             }
 
-            @SuppressWarnings("unchecked")
             @Override
             protected void done() {
                 try {
-                    Object[] result = get();
-                    if (result == null) {
+                    // get() gives back what doInBackground() returned,
+                    // or throws the error that happened there.
+                    Loaded loaded = get();
+                    if (loaded == null) {
                         showMessage("This slot has no season yet.");
                     } else {
-                        showDrivers((List<DriverStanding>) result[0]);
-                        showTeams((List<TeamStanding>) result[1]);
+                        showDrivers(loaded.drivers);
+                        showTeams(loaded.teams);
                     }
                 } catch (Exception e) {
-                    Throwable cause = e instanceof ExecutionException && e.getCause() != null
-                            ? e.getCause() : e;
-                    cause.printStackTrace();
+                    e.printStackTrace();
                     showMessage("The standings could not be loaded.");
                 }
             }
         }.execute();
     }
 
+    // =====================================================
+    // Filling the two lists
+    // =====================================================
+
     private void showDrivers(List<DriverStanding> standings) {
         driverRows.removeAll();
         for (DriverStanding s : standings) {
+            // Portrait of the driver (initials are shown if there is no picture).
             Driver driver = driversById.get(Integer.valueOf(s.getDriverId()));
-            int size = s.getPosition() <= 3 ? 52 : 40;
             Avatar avatar = new Avatar(driver == null ? null : portraits.get(driver),
-                    s.getDriverName(), size);
+                    s.getDriverName(), 44);
+
             driverRows.add(row(s.getPosition(), avatar, s.getDriverName(),
                     s.getTeamName(), s.getPoints()));
         }
-        finish(driverRows);
+        refresh(driverRows);
     }
 
     private void showTeams(List<TeamStanding> standings) {
         teamRows.removeAll();
         for (TeamStanding s : standings) {
-            teamRows.add(row(s.getPosition(), null, s.getTeamName(), "", s.getPoints()));
+            // Teams have no portrait and no second line.
+            teamRows.add(row(s.getPosition(), null, s.getTeamName(), null, s.getPoints()));
         }
-        finish(teamRows);
+        refresh(teamRows);
     }
 
+    /** Shows the same message in both cards (e.g. "Loading..."). */
     private void showMessage(String message) {
-        for (JPanel rows : new JPanel[] { driverRows, teamRows }) {
-            rows.removeAll();
-            JLabel text = Theme.label(message, Font.PLAIN, 15, Theme.MUTED);
-            text.setAlignmentX(CENTER_ALIGNMENT);
-            rows.add(Box.createVerticalStrut(60));
-            rows.add(text);
-            finish(rows);
-        }
+        driverRows.removeAll();
+        teamRows.removeAll();
+        driverRows.add(messageLabel(message));
+        teamRows.add(messageLabel(message));
+        refresh(driverRows);
+        refresh(teamRows);
     }
 
-    private static void finish(JPanel rows) {
-        rows.add(Box.createVerticalGlue());
+    private static JLabel messageLabel(String message) {
+        JLabel label = Theme.label(message, Font.PLAIN, 15, Theme.MUTED);
+        label.setBorder(BorderFactory.createEmptyBorder(40, 18, 0, 0));
+        return label;
+    }
+
+    /** Swing has to be told to lay out and repaint after rows change. */
+    private static void refresh(JPanel rows) {
         rows.revalidate();
         rows.repaint();
     }
@@ -163,127 +194,131 @@ public class StandingsPanel extends JPanel {
     // Building blocks
     // =====================================================
 
-    private static JPanel rowsPanel() {
-        JPanel rows = new JPanel();
-        rows.setOpaque(false);
-        rows.setLayout(new BoxLayout(rows, BoxLayout.Y_AXIS));
-        return rows;
-    }
-
-    /** Card with a title and a scrolling list of rows. */
+    /**
+     * A card with a title on top and a scrolling list below.
+     * The list puts its rows under each other (BoxLayout, Y axis).
+     */
     private static JPanel card(String title, JPanel rows) {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setBackground(Theme.TILE_BG);
-        card.setBorder(BorderFactory.createLineBorder(Theme.LINE));
+        rows.setLayout(new BoxLayout(rows, BoxLayout.Y_AXIS));
+        rows.setOpaque(false);
 
-        JLabel heading = Theme.label(title, Font.BOLD, 18, Theme.TEXT);
-        heading.setBorder(BorderFactory.createEmptyBorder(14, 18, 14, 18));
-        card.add(heading, BorderLayout.NORTH);
+        // The rows go into a holder at the top (NORTH), so a short list
+        // stays at the top instead of being stretched over the whole card.
+        JPanel holder = new JPanel(new BorderLayout());
+        holder.setOpaque(false);
+        holder.add(rows, BorderLayout.NORTH);
 
-        JScrollPane scroll = new JScrollPane(rows,
+        // Scrolls up and down only, with the dark scroll bar of the Drivers screen.
+        JScrollPane scroll = new JScrollPane(holder,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.setOpaque(false);
-        scroll.getViewport().setOpaque(false);
         scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getViewport().setOpaque(false);
+        scroll.setOpaque(false);
         JScrollBar bar = scroll.getVerticalScrollBar();
         bar.setUI(new DarkScrollBarUI());
         bar.setPreferredSize(new Dimension(10, 0));
-        bar.setUnitIncrement(16);
+        bar.setUnitIncrement(16); // scroll speed of the mouse wheel
+
+        JLabel heading = Theme.label(title, Font.BOLD, 18, Theme.TEXT);
+        heading.setBorder(BorderFactory.createEmptyBorder(14, 18, 14, 18));
+
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(Theme.TILE_BG);
+        card.setBorder(BorderFactory.createLineBorder(Theme.LINE));
+        card.add(heading, BorderLayout.NORTH);
         card.add(scroll, BorderLayout.CENTER);
         return card;
     }
 
-    /** Gold, silver, bronze for the top 3, null for everyone else. */
-    private static Color medal(int position) {
-        switch (position) {
-            case 1: return GOLD;
-            case 2: return SILVER;
-            case 3: return BRONZE;
-            default: return null;
+    /**
+     * One line of a list:
+     *   [position] [portrait] [name / team underneath] ......... [points]
+     *
+     * avatar and team may be null (the team list has neither).
+     * P1, P2 and P3 get a tinted background and a coloured stripe on the left.
+     */
+    private static JPanel row(int position, Avatar avatar, String name,
+            String team, double points) {
+        Color medal = medalColor(position); // null below P3
+        boolean podium = medal != null;
+
+        // BorderLayout: left part (WEST), name in the middle (CENTER), points (EAST).
+        JPanel row = new JPanel(new BorderLayout(14, 0));
+
+        if (podium) {
+            // Medal colour mixed into the card colour (12%) as background,
+            // plus a 4 px stripe on the left in the full medal colour.
+            row.setOpaque(true);
+            row.setBackground(Theme.blend(Theme.TILE_BG, medal, 0.12));
+            row.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(1, 4, 0, 0, medal),
+                    BorderFactory.createEmptyBorder(12, 14, 12, 18)));
+        } else {
+            // Normal row: transparent, thin line on top to separate rows.
+            row.setOpaque(false);
+            row.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.LINE),
+                    BorderFactory.createEmptyBorder(10, 18, 10, 18)));
         }
-    }
 
-    /** One line: position, portrait (may be null), name, team (may be empty), points. */
-    private static JPanel row(int position, Avatar avatar, String name, String team,
-            double points) {
-        final Color medal = medal(position);
-        final boolean podium = medal != null;
+        // Text colour: medal colour on the podium, white for the others.
+        Color highlight = podium ? medal : Theme.TEXT;
 
-        // Podium rows: a soft tint of the medal colour and a stripe on the left.
-        JPanel row = new JPanel(new GridBagLayout()) {
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                if (podium) {
-                    g.setColor(Theme.blend(Theme.TILE_BG, medal, 0.12));
-                    g.fillRect(0, 0, getWidth(), getHeight());
-                    g.setColor(medal);
-                    g.fillRect(0, 0, 4, getHeight());
-                }
-            }
-        };
-        row.setOpaque(false);
-        int pad = podium ? 14 : 10;
-        row.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, Theme.LINE),
-                BorderFactory.createEmptyBorder(pad, 18, pad, 18)));
-
-        GridBagConstraints c = new GridBagConstraints();
-        c.gridy = 0;
-        c.anchor = GridBagConstraints.WEST;
-        c.insets = new Insets(0, 0, 0, 14);
-
-        Color posColor = podium ? medal : Theme.TEXT;
+        // ----- left: position number and portrait -----
+        JPanel left = new JPanel();
+        left.setOpaque(false);
+        left.setLayout(new BoxLayout(left, BoxLayout.X_AXIS));
         JLabel pos = Theme.label(String.valueOf(position), Font.BOLD,
-                podium ? 22 : 18, posColor);
-        pos.setPreferredSize(new Dimension(30, 24));
-        c.gridx = 0;
-        row.add(pos, c);
-
+                podium ? 22 : 18, highlight);
+        // Fixed width so all names start at the same place. Rows with a
+        // portrait are as tall as the portrait (44 px), team rows are lower.
+        pos.setPreferredSize(new Dimension(32, avatar != null ? 44 : 26));
+        pos.setMinimumSize(pos.getPreferredSize());
+        pos.setMaximumSize(pos.getPreferredSize());
+        left.add(pos);
         if (avatar != null) {
-            c.gridx = 1;
-            row.add(avatar, c);
+            left.add(avatar);
         }
+        row.add(left, BorderLayout.WEST);
 
-        // The name takes the free space; the team column has a fixed width,
-        // so the columns line up from row to row.
-        c.gridx = 2;
-        c.weightx = 1.0;
-        c.fill = GridBagConstraints.HORIZONTAL;
-        JLabel nameLabel = Theme.label(name, Font.BOLD, podium ? 17 : 15, Theme.TEXT);
-        nameLabel.setPreferredSize(new Dimension(10, 24));
-        row.add(nameLabel, c);
-
-        if (team.length() > 0) {
-            c.gridx = 3;
-            c.weightx = 0;
-            c.fill = GridBagConstraints.NONE;
-            JLabel teamLabel = Theme.label(team, Font.PLAIN, 13, Theme.MUTED);
-            teamLabel.setPreferredSize(new Dimension(110, 24));
-            row.add(teamLabel, c);
+        // ----- middle: name, with the team in grey underneath -----
+        JPanel middle = new JPanel(new GridLayout(team == null ? 1 : 2, 1));
+        middle.setOpaque(false);
+        middle.add(Theme.label(name, Font.BOLD, podium ? 17 : 15, Theme.TEXT));
+        if (team != null) {
+            middle.add(Theme.label(team, Font.PLAIN, 13, Theme.MUTED));
         }
+        row.add(middle, BorderLayout.CENTER);
 
-        c.gridx = 4;
-        c.weightx = 0;
-        c.fill = GridBagConstraints.NONE;
-        c.anchor = GridBagConstraints.EAST;
-        c.insets = new Insets(0, 0, 0, 0);
-        JLabel pts = Theme.label(formatPoints(points) + " pts", Font.BOLD,
-                podium ? 17 : 15, podium ? medal : Theme.TEXT);
-        pts.setHorizontalAlignment(SwingConstants.RIGHT);
-        pts.setPreferredSize(new Dimension(70, 24));
-        row.add(pts, c);
+        // ----- right: points -----
+        row.add(Theme.label(formatPoints(points) + " pts", Font.BOLD,
+                podium ? 17 : 15, highlight), BorderLayout.EAST);
 
+        // Stop BoxLayout from making rows taller than they need to be.
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, row.getPreferredSize().height));
         return row;
     }
 
-    /** 25.0 becomes "25", 12.5 stays "12.5". */
+    /** Gold, silver and bronze for P1-P3, null for everyone else. */
+    private static Color medalColor(int position) {
+        if (position == 1) {
+            return GOLD;
+        }
+        if (position == 2) {
+            return SILVER;
+        }
+        if (position == 3) {
+            return BRONZE;
+        }
+        return null;
+    }
+
+    /** 25.0 becomes "25"; 12.5 stays "12.5". */
     private static String formatPoints(double points) {
-        return points == Math.rint(points)
-                ? String.valueOf((long) points) : String.valueOf(points);
+        if (points == Math.floor(points)) {
+            return String.valueOf((long) points);
+        }
+        return String.valueOf(points);
     }
 }

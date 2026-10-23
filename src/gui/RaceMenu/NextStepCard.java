@@ -87,9 +87,11 @@ class NextStepCard extends JPanel {
         } else if (!raceStage) {
             show("Race", "Qualifying is finished. The grid is set.", "Go to race");
         } else if (!raceDone) {
+            // Grid is shown, the race has not been run yet.
             show("Race", "Start the race. The results are saved for Statistics.",
                     "Start race");
         } else {
+            // Race is saved: the button takes the player to the next round.
             show("Race finished", "The results and points are saved.",
                     "Next weekend");
         }

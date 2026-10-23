@@ -35,6 +35,7 @@ class SessionStepper extends JPanel {
     }
 
     /** sessionsDone: 0 to 3 finished qualifying sessions. */
+    /** raceDone: the race was simulated, so the Race box shows FINISHED too. */
     void setProgress(int sessionsDone, boolean raceDone) {
         for (int i = 0; i < 3; i++) {
             if (i < sessionsDone) {
@@ -45,6 +46,8 @@ class SessionStepper extends JPanel {
                 boxes[i].setState(StepBox.LOCKED);
             }
         }
+        // The Race box: finished after the race, "up next" once all three
+        // quali sessions are done, locked before that.
         boxes[3].setState(raceDone ? StepBox.FINISHED
                 : sessionsDone >= 3 ? StepBox.NEXT : StepBox.LOCKED);
         repaint();

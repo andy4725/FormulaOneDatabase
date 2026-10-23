@@ -1,5 +1,6 @@
 package gui.RaceMenu;
 
+import gui.DriversMenu.DarkScrollBarUI;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -11,6 +12,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
@@ -50,13 +52,21 @@ class ResultsBoard extends JPanel {
 
         rows.setOpaque(false);
         rows.setLayout(new BoxLayout(rows, BoxLayout.Y_AXIS));
+        // The rows go into a scroll pane: 22 drivers don't fit on the
+        // screen, so the list scrolls up and down (never sideways).
         JScrollPane scroll = new JScrollPane(rows,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        // Transparent, so the card colour shows through; no extra border.
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
         scroll.setBorder(BorderFactory.createEmptyBorder());
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
+
+        // Same thin dark scroll bar as the Drivers and Standings screens.
+        JScrollBar bar = scroll.getVerticalScrollBar();
+        bar.setUI(new DarkScrollBarUI());
+        bar.setPreferredSize(new Dimension(10, 0)); // 10 px wide
+        bar.setUnitIncrement(16); // mouse wheel speed
         add(scroll, BorderLayout.CENTER);
     }
 
@@ -85,6 +95,7 @@ class ResultsBoard extends JPanel {
         }
 
         double best = results.get(0).getLapTimeSeconds();
+        // The list is sorted fastest first, so row i is position i + 1.
         for (int i = 0; i < results.size(); i++) {
             QualifyingResult result = results.get(i);
             double lap = result.getLapTimeSeconds();
@@ -102,6 +113,8 @@ class ResultsBoard extends JPanel {
         subtitle.setText(note);
         rows.removeAll();
 
+        // Instead of a lap time, the right column shows the points scored
+        // (only the top 10 score, everybody else gets 0).
         for (RaceResult result : results) {
             Integer points = pointsByDriverId.get(
                     Integer.valueOf(result.getDriver().getDriverId()));
@@ -112,6 +125,7 @@ class ResultsBoard extends JPanel {
         refresh();
     }
 
+    /** Adds one row: position, portrait, driver, team and the text on the right. */
     private void addRow(int position, Driver driver, String time) {
         String team = teamNames.get(Integer.valueOf(driver.getTeamId()));
         ResultRow row = new ResultRow(position, driver.getName(),
