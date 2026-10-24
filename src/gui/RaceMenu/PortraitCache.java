@@ -20,22 +20,28 @@ import model.Driver;
  */
 public final class PortraitCache {
 
+    // File types tried in step 2, in this order.
     private static final String[] EXTENSIONS = { ".webp", ".png", ".jpg" };
 
     private final File projectRoot = findProjectRoot();
+    // driver_id -> portrait (null if none was found).
     private final Map<Integer, BufferedImage> cache =
             new HashMap<Integer, BufferedImage>();
 
     /** Returns the portrait, or null if none could be read. */
     public BufferedImage get(Driver driver) {
         Integer id = Integer.valueOf(driver.getDriverId());
+        // containsKey (not get() != null), so "no portrait" is remembered
+        // too and the disk is not searched again for that driver.
         if (!cache.containsKey(id)) {
             cache.put(id, load(driver));
         }
         return cache.get(id);
     }
 
+    /** Reads the portrait from disk, following the search order above. */
     private BufferedImage load(Driver driver) {
+        // 1. The stored path; a relative one is resolved against the project folder.
         String stored = driver.getPortraitPath();
         if (stored != null && stored.trim().length() > 0) {
             File file = new File(stored);
@@ -48,6 +54,7 @@ public final class PortraitCache {
             }
         }
 
+        // 2. A file named after the driver in the portrait folder.
         File folder = new File(projectRoot, "assets/driver-portraits");
         String slug = slug(driver.getName());
         for (String extension : EXTENSIONS) {
@@ -59,6 +66,7 @@ public final class PortraitCache {
         return null;
     }
 
+    /** Reads one file; returns null if it is missing or unreadable. */
     private BufferedImage read(File file) {
         if (!file.isFile()) {
             return null;

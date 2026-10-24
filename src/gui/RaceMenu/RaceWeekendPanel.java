@@ -114,6 +114,7 @@ public class RaceWeekendPanel extends JPanel {
         loadWeekend();
     }
 
+    /** team_id -> team name, because a Driver only knows its team's id. */
     private static Map<Integer, String> teamNames(SimulationData data) {
         Map<Integer, String> names = new HashMap<Integer, String>();
         for (Team team : data.getTeams()) {
@@ -335,6 +336,11 @@ public class RaceWeekendPanel extends JPanel {
         }.execute();
     }
 
+    /**
+     * Copies what was read from the database into the screen's fields and
+     * shows it. Runs on the Swing thread (from done()), so it may change
+     * the window.
+     */
     private void applyLoadedWeekend(WeekendLoader.LoadedWeekend loaded) {
         event = loaded.event;
         circuit = loaded.circuit;
@@ -362,6 +368,7 @@ public class RaceWeekendPanel extends JPanel {
     // Small helpers
     // =====================================================
 
+    /** Shows the results of the session that was just finished (sessionsDone - 1). */
     private void showSessionResults(List<QualifyingResult> results) {
         board.showResults(Sessions.name(sessionsDone - 1) + " results",
                 results.size() + " drivers", results);
@@ -381,6 +388,11 @@ public class RaceWeekendPanel extends JPanel {
         }
     }
 
+    /**
+     * Prints the error to the console and shows it in a dialog.
+     * A SwingWorker wraps errors from doInBackground() in an
+     * ExecutionException; the real error is its cause, so that one is shown.
+     */
     private void showError(String message, Exception e) {
         Throwable cause = e instanceof ExecutionException && e.getCause() != null
                 ? e.getCause() : e;

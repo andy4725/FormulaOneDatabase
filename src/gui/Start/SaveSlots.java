@@ -18,12 +18,15 @@ public final class SaveSlots {
     /** Number of slots shown on the slot screen. */
     static final int COUNT = 3;
 
+    // Reads and writes the save_slots table.
     private static final SaveSlotRepository REPOSITORY =
             new SaveSlotRepository();
 
+    // Creates a new season (with all its races) for an empty slot.
     private static final SeasonService SEASONS = new SeasonService();
 
     private SaveSlots() {
+        // Only static methods; no instances needed.
     }
 
     /** True if the slot holds a game. */
@@ -39,6 +42,7 @@ public final class SaveSlots {
     /** "Empty", or when the slot was last played. */
     static String status(int slot) {
         try {
+            // null means the slot was never played.
             String raw = REPOSITORY.lastPlayed(slot);
             return raw == null ? "Empty" : "Last played: " + niceDate(raw);
         } catch (SQLException exception) {
@@ -60,6 +64,7 @@ public final class SaveSlots {
             if (!REPOSITORY.hasSeason(slot)) {
                 SEASONS.startSeason(slot);
             }
+            // Sets "last played" to now.
             REPOSITORY.touch(slot);
             return true;
         } catch (SQLException exception) {
@@ -84,15 +89,18 @@ public final class SaveSlots {
     /** "2026-10-20 11:08:31" becomes "20 Oct 2026". */
     private static String niceDate(String raw) {
         try {
+            // "in" reads the database format, "out" writes the short English one.
             SimpleDateFormat in = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             SimpleDateFormat out =
                     new SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH);
             return out.format(in.parse(raw));
         } catch (ParseException exception) {
+            // Unknown format: show it as it is stored.
             return raw;
         }
     }
 
+    /** Prints a database error to the console (the screen shows a safe value instead). */
     private static void report(String action, SQLException exception) {
         System.err.println("Could not " + action + ": "
                 + exception.getMessage());

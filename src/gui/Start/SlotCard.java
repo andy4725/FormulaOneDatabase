@@ -28,25 +28,30 @@ class SlotCard extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    private final int slot;
-    private boolean used;
-    private String status;
+    private final int slot;  // 1, 2 or 3
+    private boolean used;    // true if the slot holds a game (then the bin is shown)
+    private String status;   // second line, e.g. "Empty" or "Last played: ..."
 
-    private boolean hover = false;
-    private boolean pressed = false;
-    private boolean pressedOnDelete = false;
-    private boolean deleteHover = false;
+    // Mouse state; paintComponent() uses these to choose the colours.
+    private boolean hover = false;           // mouse is over the card
+    private boolean pressed = false;         // mouse button held down on the card
+    private boolean pressedOnDelete = false; // mouse button held down on the bin
+    private boolean deleteHover = false;     // mouse is over the bin
 
+    /** listener (the main window) is told when this slot is chosen. */
     SlotCard(final int slot, boolean used, String status,
             final IntroListener listener) {
         this.slot = slot;
         this.used = used;
         this.status = status;
 
+        // Not opaque: the rounded corners show the box behind the card.
         setOpaque(false);
         setPreferredSize(new Dimension(240, 124));
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
+        // One MouseAdapter handles both kinds of events: clicks/enter/exit
+        // (MouseListener) and movement (MouseMotionListener, for mouseMoved).
         MouseAdapter mouse = new MouseAdapter() {
             public void mouseEntered(MouseEvent e) {
                 hover = true;
@@ -60,6 +65,8 @@ class SlotCard extends JPanel {
                 repaint();
             }
 
+            // Highlight the bin (and show a tooltip) only while the mouse
+            // is over it; repaint only when that actually changes.
             public void mouseMoved(MouseEvent e) {
                 boolean over = overDelete(e);
                 if (over != deleteHover) {
@@ -109,9 +116,11 @@ class SlotCard extends JPanel {
 
     /** Area of the bin icon in the top-right corner. */
     private Rectangle deleteArea() {
+        // 32x32, 8 px from the top and right edges.
         return new Rectangle(getWidth() - 40, 8, 32, 32);
     }
 
+    /** True if the mouse is on the bin (an empty slot has no bin). */
     private boolean overDelete(MouseEvent e) {
         return used && deleteArea().contains(e.getPoint());
     }
@@ -130,11 +139,13 @@ class SlotCard extends JPanel {
                 options,
                 options[1]);   // "Cancel" is the default answer
 
+        // 0 is the first option ("Delete"); Cancel or closing the dialog stops here.
         if (choice != 0) {
             return;
         }
 
         if (SaveSlots.delete(slot)) {
+            // Show the card as empty straight away, without reloading the screen.
             used = false;
             status = "Empty";
             deleteHover = false;
@@ -151,14 +162,17 @@ class SlotCard extends JPanel {
     // PAINTING
     // =====================================================
 
+    /** Draws the card: background, border, disk icon, texts and the bin. */
     protected void paintComponent(Graphics g) {
+        // Draw on a copy of the Graphics; it is released in finally.
         Graphics2D g2 = (Graphics2D) g.create();
         try {
             Theme.enableQuality(g2);
+            // 1 px less, so the border fits inside the card.
             int w = getWidth() - 1;
             int h = getHeight() - 1;
 
-            // Card background and border.
+            // Card background and border (tinted red on hover, more when pressed).
             Color bg = Theme.HOME_BG;
             if (pressed) {
                 bg = Theme.blend(bg, Theme.F1_RED, 0.18);
@@ -171,7 +185,7 @@ class SlotCard extends JPanel {
             g2.setColor(hover ? Theme.F1_RED : new Color(62, 66, 78));
             g2.drawRoundRect(0, 0, w, h, 12, 12);
 
-            // Icon, title and status.
+            // Icon, title and status, placed at 30%, 62% and 82% of the height.
             drawDisk(g2, w / 2, (int) (h * 0.30));
 
             g2.setFont(Theme.font(Font.BOLD, 18));
@@ -190,6 +204,7 @@ class SlotCard extends JPanel {
         }
     }
 
+    /** Draws text with its middle at centreX; baseline is the bottom of the letters. */
     private void centred(Graphics2D g2, String text, int centreX,
             int baseline) {
         FontMetrics fm = g2.getFontMetrics();
@@ -198,9 +213,10 @@ class SlotCard extends JPanel {
 
     /** Small floppy-disk icon in red, centred on (cx, cy). */
     private void drawDisk(Graphics2D g2, int cx, int cy) {
+        // Own copy of the Graphics, so the thicker line (stroke) does not stay set.
         Graphics2D icon = (Graphics2D) g2.create();
         try {
-            icon.setStroke(new BasicStroke(2.2f));
+            icon.setStroke(new BasicStroke(2.2f)); // lines 2.2 px thick
             icon.setColor(Theme.F1_RED);
 
             int x = cx - 13;
@@ -226,6 +242,7 @@ class SlotCard extends JPanel {
             icon.drawLine(x - 1, y + 3, x + 17, y + 3);       // lid
             icon.drawRect(x + 5, y, 7, 3);                    // handle
             icon.drawRoundRect(x + 1, y + 6, 14, 13, 3, 3);   // body
+            // two vertical stripes on the body
             icon.drawLine(x + 6, y + 9, x + 6, y + 16);
             icon.drawLine(x + 10, y + 9, x + 10, y + 16);
         } finally {

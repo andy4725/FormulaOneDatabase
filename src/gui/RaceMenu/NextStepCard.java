@@ -23,26 +23,36 @@ class NextStepCard extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
+    // Texts and buttons that change with every step; see update().
     private final JLabel title = RaceStyle.label(" ", Font.BOLD, 20, RaceStyle.TEXT);
     private final JLabel hint = RaceStyle.label(" ", Font.PLAIN, 14, RaceStyle.MUTED);
     private final JButton mainButton = new JButton();
     private final JButton restartButton = new JButton("Restart qualifying");
 
+    /**
+     * The card does not decide what the buttons do: the screen passes in
+     * what should happen (onMain, onRestart) and the card only calls them.
+     */
     NextStepCard(ActionListener onMain, ActionListener onRestart) {
+        // Everything under each other inside a bordered card.
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(RaceStyle.CARD);
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(RaceStyle.LINE),
                 BorderFactory.createEmptyBorder(20, 20, 20, 20)));
 
+        // In a BoxLayout every child needs the same alignment,
+        // otherwise they do not line up on the left.
         JLabel heading = RaceStyle.label("NEXT STEP", Font.BOLD, 12, RaceStyle.MUTED);
         heading.setAlignmentX(Component.LEFT_ALIGNMENT);
         title.setAlignmentX(Component.LEFT_ALIGNMENT);
         hint.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        // Big red main button.
         styleButton(mainButton, RaceStyle.RED, Color.WHITE, 17);
         mainButton.addActionListener(onMain);
 
+        // Smaller, quieter restart button with a thin border.
         styleButton(restartButton, RaceStyle.CARD, RaceStyle.MUTED, 13);
         restartButton.setBorder(BorderFactory.createLineBorder(RaceStyle.LINE));
         restartButton.addActionListener(onRestart);
@@ -56,6 +66,7 @@ class NextStepCard extends JPanel {
         add(mainButton);
         add(Box.createVerticalStrut(10));
         add(restartButton);
+        // Glue takes the leftover height, so everything stays at the top.
         add(Box.createVerticalGlue());
     }
 
@@ -70,10 +81,13 @@ class NextStepCard extends JPanel {
      */
     void update(boolean hasEvent, int sessionsDone, boolean raceStage,
             boolean raceDone, boolean ready) {
+        // Restarting only makes sense once a session was run, and is
+        // hidden once the race part of the weekend has begun.
         mainButton.setEnabled(ready);
         restartButton.setEnabled(ready && sessionsDone > 0);
         restartButton.setVisible(!raceStage);
 
+        // The weekend in order: Q1 -> Q2 -> Q3 -> race grid -> race -> next weekend.
         if (!hasEvent) {
             show("Nothing to do", " ", "No weekend");
         } else if (sessionsDone == 0) {
@@ -102,12 +116,18 @@ class NextStepCard extends JPanel {
         mainButton.setText(message);
     }
 
+    /** Sets the three texts at once; a single space " " hint stays as it is. */
     private void show(String titleText, String hintText, String buttonText) {
         title.setText(titleText);
         hint.setText(" ".equals(hintText) ? hintText : html(hintText));
         mainButton.setText(buttonText);
     }
 
+    /**
+     * Flat full-width button. BasicButtonUI removes the operating system's
+     * look so the colours below are used as they are. Big text (above 15)
+     * gives a 52 px button, smaller text a 40 px one.
+     */
     private static void styleButton(JButton button, Color background,
             Color foreground, int size) {
         button.setUI(new BasicButtonUI());
@@ -124,7 +144,10 @@ class NextStepCard extends JPanel {
         button.setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
     }
 
-    /** Lets a long hint wrap inside the card. */
+    /**
+     * Lets a long hint wrap inside the card. A plain JLabel stays on one
+     * line; HTML with a fixed width makes it break into several lines.
+     */
     private static String html(String text) {
         return "<html><div style='width:190px'>" + text + "</div></html>";
     }

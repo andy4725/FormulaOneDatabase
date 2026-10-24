@@ -22,21 +22,26 @@ class SessionStepper extends JPanel {
 
     private static final String[] NAMES = { "Quali 1", "Quali 2", "Quali 3", "Race" };
 
+    // One box per name; boxes[3] is the Race box.
     private final StepBox[] boxes = new StepBox[NAMES.length];
 
     SessionStepper() {
         setOpaque(false);
+        // One row of four equally wide boxes, 12 px apart.
         setLayout(new GridLayout(1, NAMES.length, 12, 0));
         for (int i = 0; i < NAMES.length; i++) {
             boxes[i] = new StepBox(NAMES[i]);
             add(boxes[i]);
         }
+        // Start state: nothing done yet, Quali 1 is up next.
         setProgress(0, false);
     }
 
     /** sessionsDone: 0 to 3 finished qualifying sessions. */
     /** raceDone: the race was simulated, so the Race box shows FINISHED too. */
     void setProgress(int sessionsDone, boolean raceDone) {
+        // The three quali boxes: before sessionsDone = finished,
+        // exactly at sessionsDone = up next, after it = locked.
         for (int i = 0; i < 3; i++) {
             if (i < sessionsDone) {
                 boxes[i].setState(StepBox.FINISHED);
@@ -58,11 +63,12 @@ class SessionStepper extends JPanel {
 
         private static final long serialVersionUID = 1L;
 
+        // The three possible states of a box.
         static final int FINISHED = 0;
         static final int NEXT = 1;
         static final int LOCKED = 2;
 
-        private final String name;
+        private final String name;  // e.g. "Quali 2"
         private int state = LOCKED;
 
         StepBox(String name) {
@@ -70,6 +76,7 @@ class SessionStepper extends JPanel {
             setPreferredSize(new Dimension(150, 64));
         }
 
+        /** Changes the state and redraws the box. */
         void setState(int state) {
             this.state = state;
             repaint();
@@ -85,6 +92,7 @@ class SessionStepper extends JPanel {
                 int w = getWidth();
                 int h = getHeight();
 
+                // Locked boxes are darker, so they look "switched off".
                 Color fill = state == LOCKED ? RaceStyle.CARD_DARK : RaceStyle.CARD;
                 g.setColor(fill);
                 g.fillRoundRect(0, 0, w - 1, h - 1, 12, 12);
@@ -107,6 +115,7 @@ class SessionStepper extends JPanel {
                     g.drawRoundRect(0, 0, w - 1, h - 1, 12, 12);
                 }
 
+                // Small grey tag on top, the session name in bigger text below.
                 String tag = state == FINISHED ? "FINISHED" : state == NEXT ? "UP NEXT" : "LOCKED";
                 g.setFont(RaceStyle.font(Font.BOLD, 11));
                 g.setColor(RaceStyle.MUTED);

@@ -17,18 +17,19 @@ import java.util.WeakHashMap;
  */
 final class TeamStyle {
 
-    static final Color BACKGROUND    = new Color(15, 17, 22);
-    static final Color CARD          = new Color(27, 30, 37);
-    static final Color CARD_SELECTED = new Color(38, 42, 52);
-    static final Color LINE          = new Color(42, 46, 56);
-    static final Color RED           = new Color(225, 6, 0);
-    static final Color TEXT          = new Color(245, 246, 248);
-    static final Color MUTED         = new Color(165, 170, 180);
+    static final Color BACKGROUND    = new Color(15, 17, 22);    // screen background
+    static final Color CARD          = new Color(27, 30, 37);    // cards and list rows
+    static final Color CARD_SELECTED = new Color(38, 42, 52);    // selected row, sponsor rows
+    static final Color LINE          = new Color(42, 46, 56);    // thin dividers
+    static final Color RED           = new Color(225, 6, 0);     // F1 red accent
+    static final Color TEXT          = new Color(245, 246, 248); // normal text
+    static final Color MUTED         = new Color(165, 170, 180); // grey secondary text
 
     // Real team colours by team ID (same as on the drivers screen).
     // Also used as the background behind each team logo.
     private static final Map<Integer, Color> TEAM_COLOURS =
             new HashMap<Integer, Color>();
+    // A static block runs once, when the class is first used.
     static {
         TEAM_COLOURS.put(1,  new Color(255, 128, 0));   // McLaren (papaya)
         TEAM_COLOURS.put(2,  new Color(232, 0, 45));    // Ferrari (rosso)
@@ -44,13 +45,16 @@ final class TeamStyle {
     }
 
     private TeamStyle() {
+        // Only static members; no instances needed.
     }
 
+    /** The team's colour, or grey for a team that is not in the list. */
     static Color teamColour(int teamId) {
         Color colour = TEAM_COLOURS.get(teamId);
         return colour != null ? colour : MUTED;
     }
 
+    /** The screen's font; style is Font.PLAIN, Font.BOLD or Font.ITALIC. */
     static Font font(int style, int size) {
         return new Font("SansSerif", style, size);
     }
@@ -67,7 +71,7 @@ final class TeamStyle {
                 RenderingHints.VALUE_RENDER_QUALITY);
     }
 
-    /** 0.0 returns base, 1.0 returns accent. */
+    /** Mixes two colours. 0.0 returns base, 1.0 returns accent. */
     static Color blend(Color base, Color accent, double amount) {
         int r = (int) (base.getRed() * (1.0 - amount) + accent.getRed() * amount);
         int g = (int) (base.getGreen() * (1.0 - amount) + accent.getGreen() * amount);
@@ -80,6 +84,8 @@ final class TeamStyle {
         if (name == null || name.trim().length() == 0) {
             return "";
         }
+        // Split on any amount of spaces. One word: its first two letters;
+        // more words: the first letter of the first two words.
         String[] words = name.trim().split("\\s+");
         String result;
         if (words.length == 1) {
@@ -94,6 +100,7 @@ final class TeamStyle {
     static String fit(Graphics2D g2, String text, int maxWidth) {
         FontMetrics fm = g2.getFontMetrics();
         String result = text;
+        // Remove one letter at a time until the text plus "..." fits.
         while (result.length() > 3 && fm.stringWidth(result) > maxWidth) {
             result = result.substring(0, result.length() - 1);
             if (fm.stringWidth(result + "...") <= maxWidth) {
@@ -126,6 +133,7 @@ final class TeamStyle {
         if (teamName == null) {
             return "-";
         }
+        // "Red Bull Racing" -> "redbullracing", the form used as key above.
         String key = teamName.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
         String result = DIRECTORS.get(key);
         return result == null ? "-" : result;
@@ -153,6 +161,7 @@ final class TeamStyle {
         if (name == null) {
             return null;
         }
+        // contains(), not equals(): "Microsoft Azure" also matches "microsoft".
         String key = name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
         for (Map.Entry<String, Color> entry : PLATE_OVERRIDES.entrySet()) {
             if (key.contains(entry.getKey())) {
@@ -162,7 +171,9 @@ final class TeamStyle {
         return null;
     }
 
-    // Remembers the plate colour chosen for each logo.
+    // Remembers the plate colour chosen for each logo, so the pixels are
+    // only checked once. "Weak": an entry disappears by itself when its
+    // logo is no longer used anywhere, so this map cannot grow forever.
     private static final Map<BufferedImage, Color> PLATE_COLOURS =
             new WeakHashMap<BufferedImage, Color>();
 
@@ -187,6 +198,8 @@ final class TeamStyle {
             logo.getRGB(0, 0), logo.getRGB(w - 1, 0),
             logo.getRGB(0, h - 1), logo.getRGB(w - 1, h - 1)
         };
+        // A pixel is one int: alpha, red, green, blue (8 bits each).
+        // ">>> 24" moves the alpha byte down, so it is 0 (transparent) to 255 (solid).
         boolean solidBackground = true;
         for (int i = 0; i < corners.length; i++) {
             if ((corners[i] >>> 24) < 250) {
@@ -196,15 +209,21 @@ final class TeamStyle {
 
         Color result;
         if (solidBackground) {
+            // "& 0xFFFFFF" keeps only red, green and blue (drops alpha).
             result = new Color(corners[0] & 0xFFFFFF);
         } else {
             // Average brightness of the visible pixels (sampled).
+            // Only about every 20th pixel in each direction is checked,
+            // which is enough and much faster than checking all of them.
             long sum = 0;
             int count = 0;
             int step = Math.max(1, Math.min(w, h) / 20);
             for (int y = 0; y < h; y += step) {
                 for (int x = 0; x < w; x += step) {
                     int argb = logo.getRGB(x, y);
+                    // Only pixels that are at least half visible count.
+                    // 0.299/0.587/0.114 is the standard formula for how bright
+                    // a colour looks to the eye (green looks brightest).
                     if ((argb >>> 24) >= 128) {
                         int r = (argb >> 16) & 0xFF;
                         int g = (argb >> 8) & 0xFF;
@@ -214,6 +233,7 @@ final class TeamStyle {
                     }
                 }
             }
+            // Brightness is 0-255; above 170 counts as a light logo.
             boolean lightLogo = count > 0 && sum / count > 170;
             result = lightLogo ? new Color(20, 22, 28)
                                : new Color(245, 246, 248);
@@ -242,6 +262,8 @@ final class TeamStyle {
         g.setColor(new Color(255, 255, 255, 45));
         g.drawRoundRect(x, y, w - 1, h - 1, 12, 12);
 
+        // Keep some padding inside the plate, then scale the logo to fit
+        // completely (the smaller scale), keeping its proportions, and centre it.
         int pad = Math.max(3, Math.min(w, h) / 10);
         double scale = Math.min(
                 (double) (w - 2 * pad) / logo.getWidth(),

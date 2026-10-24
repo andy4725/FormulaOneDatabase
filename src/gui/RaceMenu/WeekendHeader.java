@@ -15,12 +15,14 @@ class WeekendHeader extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
+    // Three lines; " " (a space) keeps a label its full height while it is still empty.
     private final JLabel roundLabel = RaceStyle.label(" ", Font.BOLD, 13, RaceStyle.MUTED);
     private final JLabel eventLabel = RaceStyle.label("Loading...", Font.BOLD, 26, RaceStyle.TEXT);
     private final JLabel circuitLabel = RaceStyle.label(" ", Font.PLAIN, 14, RaceStyle.MUTED);
 
     WeekendHeader() {
         setOpaque(false);
+        // The three labels under each other, 2 px apart.
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         add(roundLabel);
         add(Box.createVerticalStrut(2));
@@ -29,6 +31,7 @@ class WeekendHeader extends JPanel {
         add(circuitLabel);
     }
 
+    /** Shows the weekend; circuit may be null (then the last line stays empty). */
     void show(WeekendEvent event, Circuit circuit) {
         roundLabel.setText("ROUND " + event.getRoundNumber());
         eventLabel.setText(event.getGrandPrixName());
@@ -36,6 +39,7 @@ class WeekendHeader extends JPanel {
                 : circuit.getName() + "  ·  " + circuit.getCountry());
     }
 
+    /** Shown when the slot has no season, or every race of it is finished. */
     void showNoWeekend() {
         roundLabel.setText(" ");
         eventLabel.setText("No race weekend to play");

@@ -25,7 +25,9 @@ public class SlotPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
+    /** listener (the main window) is told when a slot or Back is clicked. */
     public SlotPanel(final IntroListener listener) {
+        // GridBagLayout with one child keeps that child centred in the window.
         super(new GridBagLayout());
         setBackground(Theme.HOME_BG);
 
@@ -39,6 +41,8 @@ public class SlotPanel extends JPanel {
 
         JLabel title = Theme.label("SELECT SLOT", Font.BOLD, 20, Theme.TEXT);
 
+        // One row of equally wide slot cards, 16 px apart. Each card is
+        // told whether its slot is used and what status text to show.
         JPanel row = new JPanel(new GridLayout(1, SaveSlots.COUNT, 16, 0));
         row.setOpaque(false);
         for (int slot = 1; slot <= SaveSlots.COUNT; slot++) {
@@ -60,6 +64,7 @@ public class SlotPanel extends JPanel {
             }
         });
 
+        // The box and the Back button under each other, 20 px apart.
         JPanel column = new JPanel();
         column.setOpaque(false);
         column.setLayout(new BoxLayout(column, BoxLayout.Y_AXIS));

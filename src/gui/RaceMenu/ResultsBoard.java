@@ -29,16 +29,21 @@ class ResultsBoard extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
+    // Title on the left of the header, a short note on the right.
     private final JLabel title = RaceStyle.label("", Font.BOLD, 18, RaceStyle.TEXT);
     private final JLabel subtitle = RaceStyle.label("", Font.PLAIN, 13, RaceStyle.MUTED);
+    // The list; it is emptied and refilled every time something new is shown.
     private final JPanel rows = new JPanel();
 
+    // Portraits are read from disk once and then reused.
     private final PortraitCache portraits = new PortraitCache();
+    // team_id -> team name, because a Driver only knows its team's id.
     private final Map<Integer, String> teamNames;
 
     ResultsBoard(Map<Integer, String> teamNames) {
         this.teamNames = teamNames;
 
+        // Header on top (NORTH), the scrolling list in the rest (CENTER).
         setLayout(new BorderLayout());
         setBackground(RaceStyle.CARD);
         setBorder(BorderFactory.createLineBorder(RaceStyle.LINE));
@@ -75,6 +80,7 @@ class ResultsBoard extends JPanel {
         title.setText(heading);
         subtitle.setText("");
         rows.removeAll();
+        // Centred message, 60 px below the header.
         JLabel text = RaceStyle.label(message, Font.PLAIN, 15, RaceStyle.MUTED);
         text.setHorizontalAlignment(SwingConstants.CENTER);
         text.setAlignmentX(CENTER_ALIGNMENT);
@@ -94,6 +100,7 @@ class ResultsBoard extends JPanel {
             return;
         }
 
+        // The leader's time; everyone else shows how much slower they were.
         double best = results.get(0).getLapTimeSeconds();
         // The list is sorted fastest first, so row i is position i + 1.
         for (int i = 0; i < results.size(); i++) {
@@ -102,6 +109,7 @@ class ResultsBoard extends JPanel {
             String time = i == 0 ? TimeFormat.lap(lap) : TimeFormat.gap(lap - best);
             addRow(i + 1, result.getDriver(), time);
         }
+        // Glue takes the leftover height, so a short list stays at the top.
         rows.add(Box.createVerticalGlue());
         refresh();
     }
@@ -135,6 +143,7 @@ class ResultsBoard extends JPanel {
         rows.add(row);
     }
 
+    /** Swing has to be told to lay out and repaint after rows change. */
     private void refresh() {
         rows.revalidate();
         rows.repaint();

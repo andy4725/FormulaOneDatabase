@@ -11,34 +11,49 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
 
 /**
  * Thin dark scroll bar with a rounded thumb and no arrow buttons.
+ *
+ * A "UI" class decides how a Swing component looks. BasicScrollBarUI
+ * already does all the work (dragging, clicking, scrolling); we only
+ * override the methods that paint it. Use it with
+ * scrollPane.getVerticalScrollBar().setUI(new DarkScrollBarUI()).
+ *
+ * Track = the long background strip; thumb = the part you drag.
  */
 public class DarkScrollBarUI extends BasicScrollBarUI {
 
+    /** The arrow button at the top: replaced by an invisible one. */
     protected JButton createDecreaseButton(int orientation) {
         return emptyButton();
     }
 
+    /** The arrow button at the bottom: replaced by an invisible one. */
     protected JButton createIncreaseButton(int orientation) {
         return emptyButton();
     }
 
+    /** Colours used by the parent class. */
     protected void configureScrollBarColors() {
         thumbColor = new Color(82, 86, 96);
         trackColor = DriverStyle.CARD;
     }
 
+    /** The track is a plain rectangle in the card colour, so it blends in. */
     protected void paintTrack(Graphics g, JComponent c, Rectangle bounds) {
         g.setColor(DriverStyle.CARD);
         g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
     }
 
+    /** Rounded thumb: grey normally, dark red under the mouse, red while dragged. */
     protected void paintThumb(Graphics g, JComponent c, Rectangle bounds) {
+        // Nothing to draw if everything fits (no scrolling needed).
         if (bounds.isEmpty() || !scrollbar.isEnabled()) {
             return;
         }
+        // Draw on a copy of the Graphics; it is released in finally.
         Graphics2D g2 = (Graphics2D) g.create();
         try {
             DriverStyle.enableQuality(g2);
+            // isDragging and isThumbRollover() come from BasicScrollBarUI.
             if (isDragging) {
                 g2.setColor(DriverStyle.RED);
             } else if (isThumbRollover()) {
@@ -46,6 +61,7 @@ public class DarkScrollBarUI extends BasicScrollBarUI {
             } else {
                 g2.setColor(thumbColor);
             }
+            // 2 px smaller on every side, so there is a small gap around it.
             g2.fillRoundRect(bounds.x + 2, bounds.y + 2,
                     bounds.width - 4, bounds.height - 4, 8, 8);
         } finally {
@@ -53,6 +69,7 @@ public class DarkScrollBarUI extends BasicScrollBarUI {
         }
     }
 
+    /** A 0x0 button that can never get focus, i.e. a button nobody can see. */
     private JButton emptyButton() {
         JButton button = new JButton();
         button.setPreferredSize(new Dimension(0, 0));

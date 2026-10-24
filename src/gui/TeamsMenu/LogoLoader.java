@@ -18,13 +18,15 @@ import javax.imageio.ImageIO;
  * 2. The same file name inside the logo folders listed below.
  * 3. A file in those folders whose name matches the team/sponsor name.
  *
- * PNG, JPG and GIF are supported. SVG and WebP cannot be read by plain
- * Java, so those logos are skipped (initials or a dot are shown instead).
+ * Steps 1 and 2 read whatever ImageIO can read: PNG, JPG, GIF, and also
+ * WebP thanks to lib/webp-imageio (the team logos in the database are .webp).
+ * Step 3 only looks at PNG, JPG and GIF files. SVG cannot be read at all;
+ * then initials or a dot are shown instead.
  */
 class LogoLoader {
 
-    private final File projectRoot;
-    private final File[] folders;
+    private final File projectRoot; // the folder with "src" and "assets"
+    private final File[] folders;   // where to look for logos, in this order
 
     // Remembers results so a logo is read from disk only once.
     private final Map<String, BufferedImage> cache =
@@ -44,6 +46,8 @@ class LogoLoader {
 
     /** Returns the logo, or null if no usable image is found. */
     BufferedImage load(String storedPath, String name) {
+        // containsKey (not get() != null), so a logo that was NOT found is
+        // remembered too and not searched for again.
         String key = storedPath + "|" + name;
         if (cache.containsKey(key)) {
             return cache.get(key);
@@ -59,11 +63,14 @@ class LogoLoader {
 
     // ---------------- 1 and 2: stored path ----------------
 
+    /** Tries the path from the database, then its file name in each logo folder. */
     private BufferedImage loadFromStoredPath(String storedPath) {
+        // No path stored.
         if (storedPath == null || storedPath.trim().length() == 0) {
             return null;
         }
 
+        // Relative paths are resolved against the project root.
         File stored = new File(storedPath);
         File fromProject = stored.isAbsolute()
                 ? stored
@@ -86,6 +93,7 @@ class LogoLoader {
 
     // ---------------- 3: match by name ----------------
 
+    /** Looks through every logo folder for a file named after the team/sponsor. */
     private BufferedImage loadByName(String name) {
         String wanted = normalize(name);
         if (wanted.length() == 0) {
@@ -93,11 +101,14 @@ class LogoLoader {
         }
 
         for (int f = 0; f < folders.length; f++) {
+            // listFiles() returns null if the folder does not exist; skip it.
             File[] files = folders[f].listFiles();
             if (files == null) {
                 continue;
             }
             for (int i = 0; i < files.length; i++) {
+                // Split "red-bull.png" into "red-bull" and ".png";
+                // files without an extension are skipped.
                 String filename = files[i].getName();
                 int dot = filename.lastIndexOf('.');
                 if (dot < 0) {
@@ -121,6 +132,7 @@ class LogoLoader {
 
     // ---------------- Helpers ----------------
 
+    /** Reads one file; returns null if it is missing or unreadable. */
     private BufferedImage readImage(File file) {
         if (!file.isFile()) {
             return null;
@@ -138,6 +150,8 @@ class LogoLoader {
         if (text == null) {
             return "";
         }
+        // NFD splits accented letters into the letter plus a separate accent
+        // mark; \p{M} then removes those marks. After that only a-z and 0-9 stay.
         String decomposed = Normalizer.normalize(text, Normalizer.Form.NFD);
         return decomposed
                 .replaceAll("\\p{M}", "")
@@ -147,6 +161,7 @@ class LogoLoader {
 
     /** Looks upwards from the current folder for one with "src" and "assets". */
     private File findProjectRoot() {
+        // new File("") is the folder the program was started from.
         File current = new File("").getAbsoluteFile();
         File dir = current;
         while (dir != null) {

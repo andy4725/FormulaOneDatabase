@@ -12,17 +12,22 @@ import javax.swing.ImageIcon;
  */
 final class Icons {
 
+    // The icon types. Section stores one of these numbers for each screen.
     static final int DRIVER    = 0;
     static final int TEAMS     = 1;
     static final int RACE      = 2;
     static final int STANDINGS = 3;
     static final int HOME      = 4;
+    static final int RESULTS   = 5;
 
     private Icons() {
+        // Only static methods; no instances needed.
     }
 
     /** Turns an icon into an ImageIcon (used by the sidebar buttons). */
     static ImageIcon makeIcon(int type, Color color) {
+        // A transparent 34x34 picture (ARGB = with alpha), with the icon
+        // drawn in its centre (17, 17).
         BufferedImage image = new BufferedImage(34, 34,
                 BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics();
@@ -36,7 +41,10 @@ final class Icons {
         return new ImageIcon(image);
     }
 
-    /** Draws an icon centred on (cx, cy) in the current colour. */
+    /**
+     * Draws an icon centred on (cx, cy) in the current colour.
+     * All icons are about 32 px wide, built from filled rectangles, ovals and arcs.
+     */
     static void drawIcon(Graphics2D g, int type, int cx, int cy) {
         switch (type) {
         case DRIVER: // head and shoulders
@@ -50,7 +58,8 @@ final class Icons {
             }
             break;
         case RACE: // chequered flag
-            g.fillRect(cx - 16, cy - 14, 2, 28);
+            g.fillRect(cx - 16, cy - 14, 2, 28); // the pole
+            // 3 x 4 squares; only every second one is filled, like a chessboard.
             for (int r = 0; r < 3; r++) {
                 for (int c = 0; c < 4; c++) {
                     if ((r + c) % 2 == 0) {
@@ -66,6 +75,13 @@ final class Icons {
             roof.addPoint(cx + 15, cy);
             g.fillPolygon(roof);
             g.fillRect(cx - 10, cy, 20, 13);
+            break;
+        case RESULTS: // list: three rows of a dot and a line
+            for (int r = 0; r < 3; r++) {
+                int y = cy - 12 + r * 10;
+                g.fillRect(cx - 15, y, 5, 5);
+                g.fillRect(cx - 7, y, 22, 5);
+            }
             break;
         default: // STANDINGS: podium
             g.fillRect(cx - 16, cy, 10, 13);

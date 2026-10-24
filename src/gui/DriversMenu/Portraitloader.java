@@ -17,8 +17,8 @@ import javax.imageio.ImageIO;
  */
 class Portraitloader {
 
-    private final File projectRoot;
-    private final File portraitDirectory;
+    private final File projectRoot;       // the folder with "src" and "assets"
+    private final File portraitDirectory; // assets/driver-portraits inside it
 
     Portraitloader() {
         projectRoot = findProjectRoot();
@@ -39,7 +39,9 @@ class Portraitloader {
 
     // ---------------- 1 and 2: stored path ----------------
 
+    /** Tries the path from the database, then its file name in the portrait folder. */
     private BufferedImage loadFromStoredPath(String portraitPath) {
+        // No path stored for this driver.
         if (portraitPath == null || portraitPath.trim().length() == 0) {
             return null;
         }
@@ -54,6 +56,7 @@ class Portraitloader {
         // Also try the same file name inside the portrait folder.
         File fromFolder = new File(portraitDirectory, stored.getName());
 
+        // The first file that can be read wins.
         File[] candidates = { fromProject, fromFolder };
         for (int i = 0; i < candidates.length; i++) {
             BufferedImage image = readImage(candidates[i]);
@@ -66,7 +69,9 @@ class Portraitloader {
 
     // ---------------- 3: match by driver name ----------------
 
+    /** Looks through every file in the portrait folder for one named after the driver. */
     private BufferedImage loadByName(String driverName) {
+        // listFiles() returns null if the folder does not exist.
         File[] files = portraitDirectory.listFiles();
         if (files == null) {
             System.err.println("Portrait directory not found: "
@@ -81,6 +86,7 @@ class Portraitloader {
         long bestPixels = 0L;
 
         for (int i = 0; i < files.length; i++) {
+            // Split "max-verstappen.webp" into "max-verstappen" and ".webp".
             String filename = files[i].getName();
             int dot = filename.lastIndexOf('.');
             String base = dot < 0 ? filename : filename.substring(0, dot);
@@ -129,6 +135,8 @@ class Portraitloader {
         if (text == null) {
             return "";
         }
+        // NFD splits letters like "u with umlaut" into "u" + a separate accent
+        // mark; \p{M} then removes those marks. After that only a-z and 0-9 stay.
         String decomposed = Normalizer.normalize(text, Normalizer.Form.NFD);
         return decomposed
                 .replaceAll("\\p{M}", "")
@@ -138,6 +146,8 @@ class Portraitloader {
 
     /** Looks upwards from the current folder for one with "src" and "assets". */
     private File findProjectRoot() {
+        // new File("") is the folder the program was started from. This way
+        // the portraits are found even when it is started from bin/ or out/.
         File current = new File("").getAbsoluteFile();
         File dir = current;
         while (dir != null) {
