@@ -66,7 +66,14 @@ public class MainWindow extends JFrame implements Navigator, IntroListener {
         content.add(new HomePanel(this), Section.HOME.name());
         content.add(new DriversPanel(data), Section.DRIVERS.name());
         content.add(new TeamsPanel(data), Section.TEAMS.name());
-        racePanel = new RaceWeekendPanel(data);
+        // Its "View race results" button opens that race on the Results screen.
+        racePanel = new RaceWeekendPanel(data, new RaceWeekendPanel.Listener() {
+            public void showRaceResult(int seasonEventId) {
+                resultsPanel.showRace(currentSlot, seasonEventId);
+                cards.show(content, Section.RESULTS.name());
+                sidebar.setCurrent(Section.RESULTS);
+            }
+        });
         content.add(racePanel, Section.RACE.name());
         // Standings screen; it needs the drivers to find their portraits.
         standingsPanel = new StandingsPanel(data);

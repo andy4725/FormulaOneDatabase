@@ -45,7 +45,13 @@ public class RaceWeekendPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
+    /** Told when the player wants to see a finished race on the Results screen. */
+    public interface Listener {
+        void showRaceResult(int seasonEventId);
+    }
+
     private final SimulationData data;
+    private final Listener listener;
     private final NextQualifyingSessionService qualifying = new NextQualifyingSessionService();
     // Simulates the race and saves results, points and lap times.
     private final RaceService raceService = new RaceService();
@@ -70,8 +76,9 @@ public class RaceWeekendPanel extends JPanel {
     private boolean raceDone;     // true after the race was simulated and saved
     private boolean busy;         // something is running in the background
 
-    public RaceWeekendPanel(SimulationData data) {
+    public RaceWeekendPanel(SimulationData data, Listener listener) {
         this.data = data;
+        this.listener = listener;
         board = new ResultsBoard(teamNames(data));
         nextStep = new NextStepCard(
                 new ActionListener() {
@@ -82,6 +89,11 @@ public class RaceWeekendPanel extends JPanel {
                 new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         onRestart();
+                    }
+                },
+                new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        onViewResults();
                     }
                 });
 
@@ -274,6 +286,14 @@ public class RaceWeekendPanel extends JPanel {
                 setBusy(false, null);
             }
         }.execute();
+    }
+
+    /** After the race: opens this race's result on the Results screen. */
+    private void onViewResults() {
+        if (busy || event == null || !raceDone) {
+            return;
+        }
+        listener.showRaceResult(event.getSeasonEventId());
     }
 
     /** Deletes this weekend's quali data so it can be simulated again. */

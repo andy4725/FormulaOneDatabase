@@ -108,7 +108,20 @@ public class ResultsPanel extends JPanel {
     // =====================================================
 
     /** Level 1: reloads the races of the slot's season and goes back to the list. */
-    public void showSlot(final int slot) {
+    public void showSlot(int slot) {
+        loadRaces(slot, 0);
+    }
+
+    /**
+     * Like showSlot(), then opens one race's result straight away (used by the
+     * race weekend's "View race results" button). Back still leads to the list.
+     */
+    public void showRace(int slot, int seasonEventId) {
+        loadRaces(slot, seasonEventId);
+    }
+
+    /** Loads the race list; openEventId > 0 also opens that race once it is loaded. */
+    private void loadRaces(final int slot, final int openEventId) {
         showView(RACES);
         if (slot <= 0) {
             loader.cancel();
@@ -128,6 +141,7 @@ public class ResultsPanel extends JPanel {
                     raceList.showMessage("This slot has no season yet.");
                 } else {
                     raceList.showRaces(races);
+                    openRaceById(races, openEventId);
                 }
             }
 
@@ -136,6 +150,16 @@ public class ResultsPanel extends JPanel {
                 raceList.showMessage("The races could not be loaded.");
             }
         });
+    }
+
+    /** Opens the finished race with this id; nothing happens if it is not in the list. */
+    private void openRaceById(List<RaceSummary> races, int seasonEventId) {
+        for (RaceSummary race : races) {
+            if (race.getSeasonEventId() == seasonEventId && race.isComplete()) {
+                openRace(race);
+                return;
+            }
+        }
     }
 
     /** Level 2: shows the clicked race and loads its result. */

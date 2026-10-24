@@ -16,8 +16,8 @@ import javax.swing.plaf.basic.BasicButtonUI;
 
 /**
  * Card on the right: what comes next, the main button
- * (Start Quali 1 / Go to next session / Go to race / Start race / Next weekend)
- * and the "Restart qualifying" button.
+ * (Start Quali 1 / Go to next session / Go to race / Start race / Next weekend),
+ * the "Restart qualifying" button and, after the race, "View race results".
  */
 class NextStepCard extends JPanel {
 
@@ -28,12 +28,13 @@ class NextStepCard extends JPanel {
     private final JLabel hint = RaceStyle.label(" ", Font.PLAIN, 14, RaceStyle.MUTED);
     private final JButton mainButton = new JButton();
     private final JButton restartButton = new JButton("Restart qualifying");
+    private final JButton resultsButton = new JButton("View race results");
 
     /**
      * The card does not decide what the buttons do: the screen passes in
-     * what should happen (onMain, onRestart) and the card only calls them.
+     * what should happen (onMain, onRestart, onResults) and the card only calls them.
      */
-    NextStepCard(ActionListener onMain, ActionListener onRestart) {
+    NextStepCard(ActionListener onMain, ActionListener onRestart, ActionListener onResults) {
         // Everything under each other inside a bordered card.
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(RaceStyle.CARD);
@@ -57,6 +58,11 @@ class NextStepCard extends JPanel {
         restartButton.setBorder(BorderFactory.createLineBorder(RaceStyle.LINE));
         restartButton.addActionListener(onRestart);
 
+        // Same quiet style; only shown once the race is finished.
+        styleButton(resultsButton, RaceStyle.CARD, RaceStyle.TEXT, 13);
+        resultsButton.setBorder(BorderFactory.createLineBorder(RaceStyle.LINE));
+        resultsButton.addActionListener(onResults);
+
         add(heading);
         add(Box.createVerticalStrut(10));
         add(title);
@@ -66,6 +72,7 @@ class NextStepCard extends JPanel {
         add(mainButton);
         add(Box.createVerticalStrut(10));
         add(restartButton);
+        add(resultsButton);
         // Glue takes the leftover height, so everything stays at the top.
         add(Box.createVerticalGlue());
     }
@@ -86,6 +93,9 @@ class NextStepCard extends JPanel {
         mainButton.setEnabled(ready);
         restartButton.setEnabled(ready && sessionsDone > 0);
         restartButton.setVisible(!raceStage);
+        // The restart button is hidden by then, so this one takes its place.
+        resultsButton.setEnabled(ready);
+        resultsButton.setVisible(hasEvent && raceDone);
 
         // The weekend in order: Q1 -> Q2 -> Q3 -> race grid -> race -> next weekend.
         if (!hasEvent) {
