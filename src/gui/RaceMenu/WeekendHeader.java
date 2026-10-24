@@ -7,10 +7,11 @@ import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import gui.Common.Flags;
 import model.Circuit;
 import model.WeekendEvent;
 
-/** Top of the screen: round number, Grand Prix name, circuit and country. */
+/** Top of the screen: round number, Grand Prix name, circuit, country and its flag. */
 class WeekendHeader extends JPanel {
 
     private static final long serialVersionUID = 1L;
@@ -29,6 +30,7 @@ class WeekendHeader extends JPanel {
         add(eventLabel);
         add(Box.createVerticalStrut(2));
         add(circuitLabel);
+        circuitLabel.setIconTextGap(8); // space between the flag and the circuit name
     }
 
     /** Shows the weekend; circuit may be null (then the last line stays empty). */
@@ -37,6 +39,7 @@ class WeekendHeader extends JPanel {
         eventLabel.setText(event.getGrandPrixName());
         circuitLabel.setText(circuit == null ? " "
                 : circuit.getName() + "  ·  " + circuit.getCountry());
+        circuitLabel.setIcon(circuit == null ? null : Flags.get(circuit.getCountry(), 14));
     }
 
     /** Shown when the slot has no season, or every race of it is finished. */
@@ -44,5 +47,6 @@ class WeekendHeader extends JPanel {
         roundLabel.setText(" ");
         eventLabel.setText("No race weekend to play");
         circuitLabel.setText("Start a season first, or every race is already finished.");
+        circuitLabel.setIcon(null);
     }
 }

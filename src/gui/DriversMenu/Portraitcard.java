@@ -21,6 +21,10 @@ class Portraitcard extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
+    // How much of the portrait (from the top) fits the card's height; 0.45 = head to waist.
+    private static final double VISIBLE_PART = 0.45;
+    private static final int TOP_GAP = 12; // px of space above the head
+
     // What the card shows; changed by setDriver().
     private BufferedImage portrait;          // null = no picture
     private String name = "SELECT A DRIVER"; // shown before a driver is chosen
@@ -87,16 +91,17 @@ class Portraitcard extends JPanel {
         }
     }
 
-    /** Portrait filling the card (top-aligned so faces stay visible). */
+    /** Portrait from head to waist, centred left-right (top-aligned so faces stay visible). */
     private void paintPicture(Graphics2D g, int w, int h) {
         if (portrait != null) {
-            // Scale so the picture covers the whole card; centred left-right,
-            // but stuck to the top (y = 0) so the bottom is cut off, not the head.
-            double scale = Math.max((double) (w + 1) / portrait.getWidth(),
-                    (double) (h + 1) / portrait.getHeight());
+            // The portraits are tall full-body photos. Scaling them to the card's
+            // width zoomed in more the wider the window got, so the scale follows
+            // the card's height only: the top VISIBLE_PART of the photo fits the
+            // card, and the transparent sides show the card colour.
+            double scale = (h + 1 - TOP_GAP) / (portrait.getHeight() * VISIBLE_PART);
             int dw = (int) Math.round(portrait.getWidth() * scale);
             int dh = (int) Math.round(portrait.getHeight() * scale);
-            g.drawImage(portrait, (w + 1 - dw) / 2, 0, dw, dh, null);
+            g.drawImage(portrait, (w + 1 - dw) / 2, TOP_GAP, dw, dh, null);
         } else {
             // No picture: a team-coloured gradient and a short message.
             g.setPaint(new GradientPaint(0, 0,

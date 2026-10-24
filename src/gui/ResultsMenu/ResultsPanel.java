@@ -1,6 +1,7 @@
 package gui.ResultsMenu;
 
 import gui.Common.BackgroundLoader;
+import gui.Common.Flags;
 import gui.MainMenu.Theme;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -164,6 +165,7 @@ public class ResultsPanel extends JPanel {
         final RaceSummary race = openRace;
         title.setText(entry.getDriverName());
         subtitle.setText(race.getGrandPrixName() + "  \u2022  " + entry.getTeamName());
+        subtitle.setIcon(null);
         lapTimes.showDriver(entry);
         showViewOnly(LAPS);
 
@@ -192,10 +194,12 @@ public class ResultsPanel extends JPanel {
         if (RACES.equals(view)) {
             title.setText("Race Results");
             subtitle.setText("Click a race to see its result");
+            subtitle.setIcon(null);
         } else if (RESULT.equals(view) && openRace != null) {
             title.setText("R" + openRace.getRoundNumber() + "  " + openRace.getGrandPrixName());
             subtitle.setText(openRace.getCircuitName() + ", " + openRace.getCountry()
                     + "  \u2022  Click a driver to see their lap times");
+            subtitle.setIcon(Flags.get(openRace.getCountry(), 14));
         }
         showViewOnly(view);
     }
@@ -224,6 +228,7 @@ public class ResultsPanel extends JPanel {
         titles.setOpaque(false);
         titles.add(title);
         titles.add(subtitle);
+        subtitle.setIconTextGap(8); // space between the circuit's flag and the text
 
         // GridBagLayout centres the button vertically at its own size,
         // instead of stretching it over the height of both title lines.

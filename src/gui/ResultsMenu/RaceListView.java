@@ -1,5 +1,6 @@
 package gui.ResultsMenu;
 
+import gui.Common.Flags;
 import gui.Common.ListCard;
 import gui.MainMenu.Theme;
 import java.awt.BorderLayout;
@@ -37,14 +38,15 @@ class RaceListView extends ListCard {
         showRows(rows, "This season has no races.");
     }
 
-    /** [R5] [Grand Prix / circuit, country] ........ [winner  >] */
+    /** [R5] [Grand Prix / flag circuit, country] ........ [winner  >] */
     private JPanel raceRow(final RaceSummary race) {
         JPanel row = ResultsUi.baseRow();
 
         row.add(ResultsUi.fixed(Theme.label("R" + race.getRoundNumber(), Font.BOLD, 17,
                 Theme.F1_RED), 56, 40), BorderLayout.WEST);
         row.add(ResultsUi.twoLines(race.getGrandPrixName(),
-                race.getCircuitName() + ", " + race.getCountry(), null), BorderLayout.CENTER);
+                race.getCircuitName() + ", " + race.getCountry(),
+                Flags.get(race.getCountry(), 12), null), BorderLayout.CENTER);
 
         // Only a finished race can be opened; the others show their status.
         if (race.isComplete()) {

@@ -13,6 +13,7 @@ import java.awt.event.MouseEvent;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -51,6 +52,11 @@ final class ResultsUi {
 
     /** Bold first line, grey second line, optional purple badge next to it. */
     static JPanel twoLines(String first, String second, String badge) {
+        return twoLines(first, second, null, badge);
+    }
+
+    /** Same, with an icon (e.g. a flag) in front of the second line; icon may be null. */
+    static JPanel twoLines(String first, String second, Icon secondIcon, String badge) {
         JPanel lines = new JPanel(new GridLayout(2, 1));
         lines.setOpaque(false);
         lines.add(Theme.label(first, Font.BOLD, 15, Theme.TEXT));
@@ -58,7 +64,10 @@ final class ResultsUi {
         JPanel bottom = new JPanel();
         bottom.setOpaque(false);
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.X_AXIS));
-        bottom.add(Theme.label(second, Font.PLAIN, 13, Theme.MUTED));
+        JLabel secondLabel = Theme.label(second, Font.PLAIN, 13, Theme.MUTED);
+        secondLabel.setIcon(secondIcon);
+        secondLabel.setIconTextGap(8);
+        bottom.add(secondLabel);
         if (badge != null) {
             bottom.add(Box.createHorizontalStrut(10));
             bottom.add(Theme.label(badge, Font.BOLD, 11, PURPLE));
