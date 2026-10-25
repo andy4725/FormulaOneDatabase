@@ -25,17 +25,21 @@ class TeamDetailCard extends JPanel {
     private static final long serialVersionUID = 1L;
 
     private final TeamBanner banner = new TeamBanner();
+    // The sponsor rows go in here; it is emptied and refilled for every team.
     private final JPanel sponsorList = new JPanel();
 
     TeamDetailCard() {
+        // Banner on top (NORTH), sponsors in the rest (CENTER).
         super(new BorderLayout());
         setBackground(TeamStyle.CARD);
         setBorder(BorderFactory.createLineBorder(TeamStyle.LINE));
 
+        // Sponsor rows under each other.
         sponsorList.setLayout(new BoxLayout(sponsorList, BoxLayout.Y_AXIS));
         sponsorList.setBackground(TeamStyle.CARD);
         sponsorList.setBorder(new EmptyBorder(4, 22, 18, 22));
 
+        // Scrolls when a team has more sponsors than fit; vertical only.
         JScrollPane scroll = new JScrollPane(sponsorList);
         scroll.setBorder(null);
         scroll.getViewport().setBackground(TeamStyle.CARD);
@@ -52,6 +56,7 @@ class TeamDetailCard extends JPanel {
         title.setForeground(TeamStyle.MUTED);
         title.setBorder(new EmptyBorder(18, 22, 8, 22));
 
+        // The lower part: "SPONSORS" heading above the scrolling list.
         JPanel lower = new JPanel(new BorderLayout());
         lower.setOpaque(false);
         lower.add(title, BorderLayout.NORTH);
@@ -68,6 +73,8 @@ class TeamDetailCard extends JPanel {
 
         banner.setTeam(teamName, accent, drivers, director, teamLogo);
 
+        // Throw away the rows of the previous team, then add the new ones
+        // (numbered from 1, with 8 px between rows).
         sponsorList.removeAll();
         if (sponsors.isEmpty()) {
             JLabel none = new JLabel("No sponsors found for this team.");
@@ -82,8 +89,10 @@ class TeamDetailCard extends JPanel {
                 sponsorList.add(Box.createVerticalStrut(8));
             }
         }
+        // Glue fills the leftover space, so the rows stay at the top.
         sponsorList.add(Box.createVerticalGlue());
 
+        // Swing has to be told to lay out and repaint after rows change.
         sponsorList.revalidate();
         sponsorList.repaint();
     }

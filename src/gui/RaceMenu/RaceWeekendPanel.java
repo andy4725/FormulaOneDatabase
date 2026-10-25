@@ -45,7 +45,13 @@ public class RaceWeekendPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
+    /** Told when the player wants to see a finished race on the Results screen. */
+    public interface Listener {
+        void showRaceResult(int seasonEventId);
+    }
+
     private final SimulationData data;
+    private final Listener listener;
     private final NextQualifyingSessionService qualifying = new NextQualifyingSessionService();
     // Simulates the race and saves results, points and lap times.
     private final RaceService raceService = new RaceService();
@@ -70,8 +76,9 @@ public class RaceWeekendPanel extends JPanel {
     private boolean raceDone;     // true after the race was simulated and saved
     private boolean busy;         // something is running in the background
 
-    public RaceWeekendPanel(SimulationData data) {
+    public RaceWeekendPanel(SimulationData data, Listener listener) {
         this.data = data;
+        this.listener = listener;
         board = new ResultsBoard(teamNames(data));
         nextStep = new NextStepCard(
                 new ActionListener() {
@@ -82,6 +89,11 @@ public class RaceWeekendPanel extends JPanel {
                 new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
                         onRestart();
+                    }
+                },
+                new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        onViewResults();
                     }
                 });
 
@@ -114,6 +126,7 @@ public class RaceWeekendPanel extends JPanel {
         loadWeekend();
     }
 
+    /** team_id -> team name, because a Driver only knows its team's id. */
     private static Map<Integer, String> teamNames(SimulationData data) {
         Map<Integer, String> names = new HashMap<Integer, String>();
         for (Team team : data.getTeams()) {
@@ -275,6 +288,14 @@ public class RaceWeekendPanel extends JPanel {
         }.execute();
     }
 
+    /** After the race: opens this race's result on the Results screen. */
+    private void onViewResults() {
+        if (busy || event == null || !raceDone) {
+            return;
+        }
+        listener.showRaceResult(event.getSeasonEventId());
+    }
+
     /** Deletes this weekend's quali data so it can be simulated again. */
     private void onRestart() {
         if (busy || event == null) {
@@ -335,6 +356,11 @@ public class RaceWeekendPanel extends JPanel {
         }.execute();
     }
 
+    /**
+     * Copies what was read from the database into the screen's fields and
+     * shows it. Runs on the Swing thread (from done()), so it may change
+     * the window.
+     */
     private void applyLoadedWeekend(WeekendLoader.LoadedWeekend loaded) {
         event = loaded.event;
         circuit = loaded.circuit;
@@ -362,6 +388,7 @@ public class RaceWeekendPanel extends JPanel {
     // Small helpers
     // =====================================================
 
+    /** Shows the results of the session that was just finished (sessionsDone - 1). */
     private void showSessionResults(List<QualifyingResult> results) {
         board.showResults(Sessions.name(sessionsDone - 1) + " results",
                 results.size() + " drivers", results);
@@ -381,6 +408,11 @@ public class RaceWeekendPanel extends JPanel {
         }
     }
 
+    /**
+     * Prints the error to the console and shows it in a dialog.
+     * A SwingWorker wraps errors from doInBackground() in an
+     * ExecutionException; the real error is its cause, so that one is shown.
+     */
     private void showError(String message, Exception e) {
         Throwable cause = e instanceof ExecutionException && e.getCause() != null
                 ? e.getCause() : e;

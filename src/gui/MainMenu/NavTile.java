@@ -27,13 +27,15 @@ class NavTile extends JPanel {
 
     private final String title;
     private final String description; // "|" marks a line break
-    private final Color accent;
-    private final int iconType;
-    private final BufferedImage picture;
+    private final Color accent;       // colour of the stripe, border and arrow
+    private final int iconType;       // one of the Icons constants
+    private final BufferedImage picture; // null if there is no picture file
 
-    private boolean hover = false;
-    private boolean pressed = false;
+    // Mouse state; paintComponent() uses these to choose the colours.
+    private boolean hover = false;   // mouse is over the card
+    private boolean pressed = false; // mouse button is held down on the card
 
+    /** Makes a card that opens the given section when it is clicked. */
     NavTile(final Navigator navigator, final Section section,
             String title, String description, Color accent) {
         this.title = title;
@@ -42,9 +44,12 @@ class NavTile extends JPanel {
         this.iconType = section.icon;
         this.picture = Theme.loadAny(section.imageName());
 
+        // Not opaque: the rounded corners show the screen behind the card.
         setOpaque(false);
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
+        // Each mouse event only changes the state and calls repaint();
+        // Swing then calls paintComponent() again to draw the new look.
         addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) {
                 hover = true;
@@ -75,10 +80,14 @@ class NavTile extends JPanel {
         });
     }
 
+    /** Draws the whole card by hand, back to front. */
     protected void paintComponent(Graphics g) {
+        // Work on a copy of the Graphics, so the clip and colours set here
+        // do not affect other components; it is released in finally.
         Graphics2D g2 = (Graphics2D) g.create();
         try {
             Theme.enableQuality(g2);
+            // 1 px less, so the border line is not cut off at the right and bottom.
             int w = getWidth() - 1;
             int h = getHeight() - 1;
 
@@ -95,9 +104,10 @@ class NavTile extends JPanel {
             g2.setColor(accent);
             g2.fillRect(0, 0, 5, h + 1);
 
+            // Stop clipping, so the border can be drawn on the edge itself.
             g2.setClip(null);
 
-            // Border.
+            // Border: full accent colour on hover, a softer mix otherwise.
             g2.setColor(hover ? accent : Theme.blend(Theme.TILE_BG, accent, 0.35));
             g2.drawRoundRect(0, 0, w, h, 18, 18);
 
@@ -121,15 +131,19 @@ class NavTile extends JPanel {
 
     /** Top part: the picture, or a coloured gradient with a big icon. */
     private void paintArtwork(Graphics2D g2, int w, int h, Color bg) {
+        // The artwork takes the top 62% of the card.
         int artH = (int) (h * 0.62);
 
         if (picture != null) {
             Theme.drawCover(g2, picture, 0, 0, w, artH);
         } else {
+            // Accent colour at the top, fading down to the card colour.
             g2.setPaint(new GradientPaint(0, 0,
                     Theme.blend(Theme.TILE_BG, accent, 0.45), 0, artH, bg));
             g2.fillRect(0, 0, w + 1, artH);
 
+            // The icon drawn 2.6x bigger: translate moves (0, 0) to the
+            // centre of the artwork, scale makes everything drawn after it larger.
             Graphics2D big = (Graphics2D) g2.create();
             big.translate(w / 2, artH * 0.45);
             big.scale(2.6, 2.6);
@@ -147,12 +161,16 @@ class NavTile extends JPanel {
 
     /** Small icon, title and description, positioned from the bottom. */
     private void paintText(Graphics2D g2, int h) {
+        // The last description line sits 78 px above the bottom; the other
+        // lines, the title and the icon are stacked above it. "Base" means
+        // the baseline of the text, which is the y that drawString() wants.
         String[] lines = description.split("\\|");
         int lineHeight = 18;
         int lastBase = h - 78;
         int firstBase = lastBase - (lines.length - 1) * lineHeight;
         int titleBase = firstBase - 24;
 
+        // Small icon above the title, slightly smaller than normal (0.9x).
         Graphics2D small = (Graphics2D) g2.create();
         small.translate(44, titleBase - 46);
         small.scale(0.9, 0.9);
@@ -173,6 +191,7 @@ class NavTile extends JPanel {
 
     /** Round arrow button in the bottom-right corner (filled on hover). */
     private void paintArrow(Graphics2D g2, int w, int h) {
+        // A 36 px circle, 24 px away from the right and bottom edges.
         int d = 36;
         int x = w - 24 - d;
         int y = h - 24 - d;
@@ -187,6 +206,8 @@ class NavTile extends JPanel {
 
         g2.setFont(Theme.font(Font.BOLD, 18));
         g2.setColor(hover ? Color.WHITE : Theme.TEXT);
+        // FontMetrics tells how wide and tall the text is, so the arrow (\u2192)
+        // can be centred in the circle.
         FontMetrics fm = g2.getFontMetrics();
         String arrow = "\u2192";
         g2.drawString(arrow,

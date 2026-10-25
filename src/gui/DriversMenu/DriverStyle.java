@@ -12,18 +12,19 @@ import java.util.Map;
  */
 final class DriverStyle {
 
-    static final Color BACKGROUND    = new Color(15, 17, 22);
-    static final Color CARD          = new Color(27, 30, 37);
-    static final Color CARD_SELECTED = new Color(38, 42, 52);
-    static final Color LINE          = new Color(42, 46, 56);
-    static final Color RED           = new Color(225, 6, 0);
-    static final Color TEXT          = new Color(245, 246, 248);
-    static final Color MUTED         = new Color(165, 170, 180);
+    static final Color BACKGROUND    = new Color(15, 17, 22);    // screen background
+    static final Color CARD          = new Color(27, 30, 37);    // cards and list rows
+    static final Color CARD_SELECTED = new Color(38, 42, 52);    // the selected list row
+    static final Color LINE          = new Color(42, 46, 56);    // thin dividers
+    static final Color RED           = new Color(225, 6, 0);     // F1 red accent
+    static final Color TEXT          = new Color(245, 246, 248); // normal text
+    static final Color MUTED         = new Color(165, 170, 180); // grey secondary text
 
     // Real team colours, keyed by team_id from the teams table.
     // To add a team, add one more put(...) line.
     private static final Map<Integer, Color> TEAM_COLOURS =
             new HashMap<Integer, Color>();
+    // A static block runs once, when the class is first used.
     static {
         TEAM_COLOURS.put(1,  new Color(255, 128, 0));   // McLaren (papaya)
         TEAM_COLOURS.put(2,  new Color(232, 0, 45));    // Ferrari (rosso)
@@ -39,13 +40,16 @@ final class DriverStyle {
     }
 
     private DriverStyle() {
+        // Only static members; no instances needed.
     }
 
+    /** The team's colour, or grey for a team that is not in the list. */
     static Color teamColour(int teamId) {
         Color colour = TEAM_COLOURS.get(teamId);
         return colour != null ? colour : MUTED;
     }
 
+    /** The screen's font; style is Font.PLAIN, Font.BOLD or Font.ITALIC. */
     static Font font(int style, int size) {
         return new Font("SansSerif", style, size);
     }
@@ -62,7 +66,7 @@ final class DriverStyle {
                 RenderingHints.VALUE_RENDER_QUALITY);
     }
 
-    /** 0.0 returns base, 1.0 returns accent. */
+    /** Mixes two colours. 0.0 returns base, 1.0 returns accent. */
     static Color blend(Color base, Color accent, double amount) {
         int r = (int) (base.getRed() * (1.0 - amount) + accent.getRed() * amount);
         int g = (int) (base.getGreen() * (1.0 - amount) + accent.getGreen() * amount);

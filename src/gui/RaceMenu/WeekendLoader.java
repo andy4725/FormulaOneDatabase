@@ -28,19 +28,26 @@ class WeekendLoader {
     private final RaceWeekendRepository weekendRepository = new RaceWeekendRepository();
     private final QualifyingRepository qualifyingRepository = new QualifyingRepository();
 
+    /**
+     * Reads the current weekend of the slot. This talks to the database,
+     * so the screen calls it from a background thread (SwingWorker).
+     */
     LoadedWeekend load(SimulationData data, int slot) throws SQLException {
         LoadedWeekend loaded = new LoadedWeekend();
+        // The first race of the season that is not finished yet.
         loaded.event = weekendRepository.findCurrentEvent(slot);
         if (loaded.event == null) {
             return loaded;
         }
 
+        // Find the event's circuit among the circuits loaded at start-up.
         for (Circuit circuit : data.getCircuits()) {
             if (circuit.getCircuitId() == loaded.event.getCircuitId()) {
                 loaded.circuit = circuit;
             }
         }
 
+        // A session counts as done when it has saved laps.
         int id = loaded.event.getSeasonEventId();
         for (String session : Sessions.CODES) {
             if (qualifyingRepository.sessionHasLaps(id, session)) {

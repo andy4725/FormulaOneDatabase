@@ -42,4 +42,24 @@ public class DriverRepository {
 
         return driverList;
     }
+
+    // Updates the row in driver_stats, or creates it if the driver has none yet.
+    public void updateRatings(int driverId, int experience, int racecraft, int pace, int awareness) throws SQLException {
+        String sql = "INSERT INTO driver_stats (driver_id, experience, racecraft, pace, awareness) " +
+                     "VALUES (?, ?, ?, ?, ?) " +
+                     "ON CONFLICT(driver_id) DO UPDATE SET " +
+                     "experience = excluded.experience, racecraft = excluded.racecraft, " +
+                     "pace = excluded.pace, awareness = excluded.awareness";
+
+        try(Connection connection = Database.getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setInt(1, driverId);
+            statement.setInt(2, experience);
+            statement.setInt(3, racecraft);
+            statement.setInt(4, pace);
+            statement.setInt(5, awareness);
+            statement.executeUpdate();
+        }
+    }
 }

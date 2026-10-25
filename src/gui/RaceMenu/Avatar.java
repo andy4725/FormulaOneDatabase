@@ -14,10 +14,11 @@ public class Avatar extends JComponent {
 
     private static final long serialVersionUID = 1L;
 
-    private final int size;
-    private final BufferedImage image;
-    private final String initials;
+    private final int size;            // width and height in pixels
+    private final BufferedImage image; // null = draw the initials instead
+    private final String initials;     // e.g. "MV" for Max Verstappen
 
+    /** image may be null; name is only used for the initials. */
     public Avatar(BufferedImage image, String name, int size) {
         this.image = image;
         this.initials = initials(name);
@@ -59,6 +60,7 @@ public class Avatar extends JComponent {
         }
     }
 
+    /** First letters of the first two words, in capitals: "Max Verstappen" -> "MV". */
     private static String initials(String name) {
         StringBuilder out = new StringBuilder();
         for (String part : name.trim().split("\\s+")) {

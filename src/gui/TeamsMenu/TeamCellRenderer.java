@@ -20,19 +20,26 @@ import model.Team;
 /**
  * Paints one row of the team list: coloured stripe, logo (or initials
  * badge), team name and driver names.
+ *
+ * A JList does not make a component for every row. It uses this one
+ * object as a "stamp": for each row it calls
+ * getListCellRendererComponent() to fill in that row's values, then
+ * paints this panel at the row's position.
  */
 class TeamCellRenderer extends JPanel implements ListCellRenderer<Team> {
 
     private static final long serialVersionUID = 1L;
 
+    // Prepared by TeamsPanel, keyed by team_id.
     private final Map<Integer, List<String>> driverNames;
     private final Map<Integer, BufferedImage> teamLogos;
 
+    // The values of the row that is being painted right now.
     private String name = "";
-    private String initials = "";
-    private String info = "";
+    private String initials = "";        // shown when there is no logo
+    private String info = "";            // the driver names, in one line
     private BufferedImage logo;
-    private Color accent = TeamStyle.RED;
+    private Color accent = TeamStyle.RED; // the team colour
     private boolean selected = false;
 
     TeamCellRenderer(Map<Integer, List<String>> driverNames,
@@ -60,11 +67,14 @@ class TeamCellRenderer extends JPanel implements ListCellRenderer<Team> {
         return this;
     }
 
+    /** Every row is 72 px high (the list stretches the width). */
     public Dimension getPreferredSize() {
         return new Dimension(200, 72);
     }
 
+    /** Paints the row with the values stored by getListCellRendererComponent(). */
     protected void paintComponent(Graphics g) {
+        // Draw on a copy of the Graphics; it is released in finally.
         Graphics2D g2 = (Graphics2D) g.create();
         try {
             TeamStyle.enableQuality(g2);
@@ -107,7 +117,8 @@ class TeamCellRenderer extends JPanel implements ListCellRenderer<Team> {
                         badgeY + (badgeH + fm.getAscent() - fm.getDescent()) / 2);
             }
 
-            // Name and driver names.
+            // Name and driver names, right of the logo. Long texts are
+            // shortened with "..." so they never run past the right edge.
             int textX = badgeX + badgeW + 14;
             int maxWidth = w - textX - 10;
 

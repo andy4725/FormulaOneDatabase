@@ -2,6 +2,7 @@ package gui.MainMenu;
 
 import gui.DriversMenu.DriversPanel;
 import gui.RaceMenu.RaceWeekendPanel;
+import gui.ResultsMenu.ResultsPanel;
 import gui.Start.IntroListener;
 import gui.Start.SaveSlots;
 import gui.Start.SlotPanel;
@@ -52,21 +53,36 @@ public class MainWindow extends JFrame implements Navigator, IntroListener {
 
     private final RaceWeekendPanel racePanel;
     private final StandingsPanel standingsPanel;
+    private final ResultsPanel resultsPanel;
 
+    /** Builds every screen once; data holds the drivers, teams etc. read at start-up. */
     public MainWindow(SimulationData data) {
-        super("F1 2026 Simulator");
+        super("F1 2026 Simulator"); // the window title
 
         // ----- main menu -----
+        // Every screen is added to the CardLayout with its Section name as key;
+        // showSection() later shows one of them by that key.
         content.setBackground(Theme.HOME_BG);
         content.add(new HomePanel(this), Section.HOME.name());
         content.add(new DriversPanel(data), Section.DRIVERS.name());
         content.add(new TeamsPanel(data), Section.TEAMS.name());
-        racePanel = new RaceWeekendPanel(data);
+        // Its "View race results" button opens that race on the Results screen.
+        racePanel = new RaceWeekendPanel(data, new RaceWeekendPanel.Listener() {
+            public void showRaceResult(int seasonEventId) {
+                resultsPanel.showRace(currentSlot, seasonEventId);
+                cards.show(content, Section.RESULTS.name());
+                sidebar.setCurrent(Section.RESULTS);
+            }
+        });
         content.add(racePanel, Section.RACE.name());
         // Standings screen; it needs the drivers to find their portraits.
         standingsPanel = new StandingsPanel(data);
         content.add(standingsPanel, Section.STANDINGS.name());
+        // Results screen: races -> one race's result -> one driver's laps.
+        resultsPanel = new ResultsPanel(data);
+        content.add(resultsPanel, Section.RESULTS.name());
 
+        // The main menu: sidebar on the left, the current screen in the rest.
         JPanel app = new JPanel(new BorderLayout());
         app.add(sidebar, BorderLayout.WEST);
         app.add(content, BorderLayout.CENTER);
@@ -78,9 +94,12 @@ public class MainWindow extends JFrame implements Navigator, IntroListener {
         root.add(app, APP);
         add(root);
 
+        // The program starts on the start screen, with Home ready behind it.
         showSection(Section.HOME);
         screens.show(root, START);
 
+        // Closing the window ends the program. Start at 1200x760, never
+        // smaller than 1000x640, in the middle of the screen (null).
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 760);
         setMinimumSize(new Dimension(1000, 640));
@@ -91,14 +110,17 @@ public class MainWindow extends JFrame implements Navigator, IntroListener {
     // START FLOW (IntroListener)
     // =====================================================
 
+    /** "Start" was clicked on the start screen: go to the slot selection. */
     public void onStart() {
         screens.show(root, SLOTS);
     }
 
+    /** "Back" was clicked on the slot screen: return to the start screen. */
     public void onBack() {
         screens.show(root, START);
     }
 
+    /** A save slot was clicked: prepare its season, then open the main menu. */
     public void onSlotChosen(final int slot) {
         // Ignore extra clicks while a slot is already being opened.
         if (openingSlot) {
@@ -159,6 +181,9 @@ public class MainWindow extends JFrame implements Navigator, IntroListener {
         if (section == Section.STANDINGS) {
             // Reload every time, so races finished since the last visit show up.
             standingsPanel.showSlot(currentSlot);
+        } else if (section == Section.RESULTS) {
+            // Same for the results: start again at the list of races.
+            resultsPanel.showSlot(currentSlot);
         }
         cards.show(content, section.name());
         sidebar.setCurrent(section);

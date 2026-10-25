@@ -13,7 +13,9 @@ class HomePanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
+    /** The navigator (the main window) is handed to the cards, so a click can change screen. */
     HomePanel(Navigator navigator) {
+        // BorderLayout: NORTH = top, CENTER = takes the rest of the space, SOUTH = bottom.
         super(new BorderLayout());
         setBackground(Theme.HOME_BG);
 
@@ -25,11 +27,14 @@ class HomePanel extends JPanel {
                 BorderLayout.SOUTH);
     }
 
+    /** One row of four cards; clicking a card opens that screen. */
     private JPanel buildTiles(Navigator navigator) {
+        // GridLayout(1, 4): one row, four columns of equal width, 16 px apart.
         JPanel row = new JPanel(new GridLayout(1, 4, 16, 0));
         row.setBackground(Theme.HOME_BG);
         row.setBorder(BorderFactory.createEmptyBorder(8, 28, 24, 28));
 
+        // Each card: screen to open, title, description and accent colour.
         // "|" in a description marks a line break.
         row.add(new NavTile(navigator, Section.DRIVERS, "DRIVERS",
                 "Explore the driver|lineup, view stats and|manage racing talent.",

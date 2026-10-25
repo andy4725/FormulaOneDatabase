@@ -59,4 +59,12 @@ public class Driver {
     public int getAwareness() {
         return awareness;
     }
+
+    /** Changes the four ratings after they were saved, so the simulation uses them at once. */
+    public void setRatings(int experience, int racecraft, int pace, int awareness) {
+        this.experience = experience;
+        this.racecraft = racecraft;
+        this.pace = pace;
+        this.awareness = awareness;
+    }
 }

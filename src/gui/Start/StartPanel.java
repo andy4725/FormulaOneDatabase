@@ -23,10 +23,13 @@ public class StartPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
+    /** listener (the main window) is told when START is clicked. */
     public StartPanel(final IntroListener listener) {
+        // GridBagLayout with one child keeps that child centred in the window.
         super(new GridBagLayout());
         setBackground(Theme.HOME_BG);
 
+        // The rounded card: the picture fills it, the texts and button sit at the bottom.
         RoundedPanel card = new RoundedPanel(new BorderLayout(0, 18),
                 Theme.SIDEBAR_BG, Theme.LINE, 16);
         card.setBorder(new EmptyBorder(22, 22, 22, 22));
@@ -40,6 +43,7 @@ public class StartPanel extends JPanel {
                 Font.PLAIN, 15, Theme.MUTED);
         tagline.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        // Red START button; a click goes on to the slot selection.
         ActionButton start = new ActionButton("START", Theme.F1_RED);
         start.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -47,6 +51,7 @@ public class StartPanel extends JPanel {
             }
         });
 
+        // Title, tagline and button under each other (struts = fixed gaps).
         JPanel info = new JPanel();
         info.setOpaque(false);
         info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));

@@ -16,14 +16,15 @@ import javax.swing.JLabel;
 public final class Theme {
 
     // ---------------- Colours ----------------
-    public static final Color HOME_BG    = new Color(15, 17, 22);
-    public static final Color SIDEBAR_BG = new Color(18, 20, 26);
-    public static final Color TILE_BG    = new Color(27, 30, 37);
-    public static final Color LINE       = new Color(42, 46, 56);
-    public static final Color NAV_HOVER  = new Color(32, 36, 45);
-    public static final Color F1_RED     = new Color(225, 6, 0);
-    public static final Color TEXT       = new Color(245, 246, 248);
-    public static final Color MUTED      = new Color(165, 170, 180);
+    // (red, green, blue), each 0-255.
+    public static final Color HOME_BG    = new Color(15, 17, 22);    // screen background
+    public static final Color SIDEBAR_BG = new Color(18, 20, 26);    // sidebar and footer
+    public static final Color TILE_BG    = new Color(27, 30, 37);    // cards
+    public static final Color LINE       = new Color(42, 46, 56);    // thin borders and dividers
+    public static final Color NAV_HOVER  = new Color(32, 36, 45);    // background under the mouse
+    public static final Color F1_RED     = new Color(225, 6, 0);     // accent / selected button
+    public static final Color TEXT       = new Color(245, 246, 248); // normal text
+    public static final Color MUTED      = new Color(165, 170, 180); // grey secondary text
 
     private Theme() {
         // Only static members; no instances needed.
@@ -31,10 +32,12 @@ public final class Theme {
 
     // ---------------- Fonts and labels ----------------
 
+    /** The app's font; style is Font.PLAIN, Font.BOLD or Font.ITALIC (or BOLD | ITALIC). */
     public static Font font(int style, int size) {
         return new Font("SansSerif", style, size);
     }
 
+    /** A label with the given text, font style, size and colour, in one line. */
     public static JLabel label(String text, int style, int size, Color color) {
         JLabel label = new JLabel(text);
         label.setFont(font(style, size));
@@ -44,7 +47,10 @@ public final class Theme {
 
     // ---------------- Colours and drawing ----------------
 
-    /** 0.0 returns base, 1.0 returns accent. */
+    /**
+     * Mixes two colours. 0.0 returns base, 1.0 returns accent,
+     * 0.12 is base with a hint (12%) of accent.
+     */
     public static Color blend(Color base, Color accent, double amount) {
         int r = (int) (base.getRed() * (1.0 - amount) + accent.getRed() * amount);
         int g = (int) (base.getGreen() * (1.0 - amount) + accent.getGreen() * amount);
@@ -65,11 +71,14 @@ public final class Theme {
     /** Draws an image so it fills the rectangle (cropping the extra). */
     public static void drawCover(Graphics2D g, BufferedImage img,
             int x, int y, int w, int h) {
+        // The larger of the two scales makes the image cover the whole
+        // rectangle; whatever sticks out on one side is cut off.
         double scale = Math.max((double) w / img.getWidth(),
                 (double) h / img.getHeight());
         int dw = (int) Math.round(img.getWidth() * scale);
         int dh = (int) Math.round(img.getHeight() * scale);
 
+        // Clip = only draw inside the rectangle; the old clip is put back afterwards.
         Shape oldClip = g.getClip();
         g.clipRect(x, y, w, h);
         g.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh, null);
@@ -81,6 +90,7 @@ public final class Theme {
     /** Reads assets/name; returns null if it is missing or unreadable. */
     public static BufferedImage loadImage(String name) {
         try {
+            // Relative to the folder the program is started from (the project folder).
             File file = new File("assets/" + name);
             if (!file.isFile()) {
                 return null;

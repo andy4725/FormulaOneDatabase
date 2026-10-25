@@ -7,38 +7,46 @@ import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import gui.Common.Flags;
 import model.Circuit;
 import model.WeekendEvent;
 
-/** Top of the screen: round number, Grand Prix name, circuit and country. */
+/** Top of the screen: round number, Grand Prix name, circuit, country and its flag. */
 class WeekendHeader extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
+    // Three lines; " " (a space) keeps a label its full height while it is still empty.
     private final JLabel roundLabel = RaceStyle.label(" ", Font.BOLD, 13, RaceStyle.MUTED);
     private final JLabel eventLabel = RaceStyle.label("Loading...", Font.BOLD, 26, RaceStyle.TEXT);
     private final JLabel circuitLabel = RaceStyle.label(" ", Font.PLAIN, 14, RaceStyle.MUTED);
 
     WeekendHeader() {
         setOpaque(false);
+        // The three labels under each other, 2 px apart.
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         add(roundLabel);
         add(Box.createVerticalStrut(2));
         add(eventLabel);
         add(Box.createVerticalStrut(2));
         add(circuitLabel);
+        circuitLabel.setIconTextGap(8); // space between the flag and the circuit name
     }
 
+    /** Shows the weekend; circuit may be null (then the last line stays empty). */
     void show(WeekendEvent event, Circuit circuit) {
         roundLabel.setText("ROUND " + event.getRoundNumber());
         eventLabel.setText(event.getGrandPrixName());
         circuitLabel.setText(circuit == null ? " "
                 : circuit.getName() + "  ·  " + circuit.getCountry());
+        circuitLabel.setIcon(circuit == null ? null : Flags.get(circuit.getCountry(), 14));
     }
 
+    /** Shown when the slot has no season, or every race of it is finished. */
     void showNoWeekend() {
         roundLabel.setText(" ");
         eventLabel.setText("No race weekend to play");
         circuitLabel.setText("Start a season first, or every race is already finished.");
+        circuitLabel.setIcon(null);
     }
 }

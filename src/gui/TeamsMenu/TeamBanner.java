@@ -19,18 +19,21 @@ class TeamBanner extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    private String name = "SELECT A TEAM";
-    private String drivers = "";
-    private String director = "";
-    private Color accent = TeamStyle.RED;
-    private BufferedImage logo;
+    // What the banner shows; changed by setTeam().
+    private String name = "SELECT A TEAM"; // shown before a team is chosen
+    private String drivers = "";           // e.g. "Lando Norris, Oscar Piastri"
+    private String director = "";          // the team principal
+    private Color accent = TeamStyle.RED;  // the team colour
+    private BufferedImage logo;            // null = no logo, initials are drawn
 
     TeamBanner() {
         setOpaque(true);
         setBackground(TeamStyle.CARD);
+        // 210 px high; the width (100) does not matter, the layout stretches it.
         setPreferredSize(new Dimension(100, 210));
     }
 
+    /** Shows another team; the driver names are joined into one line. */
     void setTeam(String name, Color accent, List<String> drivers,
             String director, BufferedImage logo) {
         this.name = name == null ? "" : name;
@@ -38,10 +41,12 @@ class TeamBanner extends JPanel {
         this.logo = logo;
         this.drivers = TeamStyle.joinNames(drivers);
         this.director = director == null ? "-" : director;
-        repaint();
+        repaint(); // ask Swing to call paintComponent() again
     }
 
+    /** Draws the whole banner by hand: gradient, logo, stripe, name and info lines. */
     protected void paintComponent(Graphics g) {
+        // Draw on a copy of the Graphics; it is released in finally.
         Graphics2D g2 = (Graphics2D) g.create();
         try {
             TeamStyle.enableQuality(g2);
@@ -55,6 +60,7 @@ class TeamBanner extends JPanel {
             g2.fillRect(0, 0, w, h);
 
             // Team logo on the right, or big faint initials without a logo.
+            // "reserved" is the width the logo takes, so the name stays clear of it.
             int reserved = 0;
             if (logo != null) {
                 TeamStyle.drawLogo(g2, logo, w - 28 - 210, 28, 210, 126, accent);
@@ -101,6 +107,7 @@ class TeamBanner extends JPanel {
         g2.setColor(TeamStyle.MUTED);
         g2.drawString(label, 28, y);
 
+        // The values all start 120 px after the labels, so they line up.
         int valueX = 28 + 120;
         g2.setFont(TeamStyle.font(Font.PLAIN, 14));
         g2.setColor(TeamStyle.TEXT);

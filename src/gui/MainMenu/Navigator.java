@@ -6,5 +6,6 @@ package gui.MainMenu;
  */
 interface Navigator {
 
+    /** Shows the screen of this section (MainWindow implements it). */
     void showSection(Section section);
 }
