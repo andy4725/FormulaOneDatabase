@@ -3,38 +3,48 @@ package gui.DriversMenu;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.plaf.basic.BasicButtonUI;
 
 import model.Driver;
 import model.SimulationData;
 import model.Team;
+import repository.DriverRepository;
 
 
 /**
  * Drivers screen.
  *
  * Left:  list of drivers (number badge, name, team).
- * Right: large portrait card and four statistic bars.
+ * Right: large portrait card and four statistic bars. The bars are sliders;
+ *        "Save ratings" writes the changes to the database (for every slot).
  *
  * The drawing is done by small helper classes in this package:
  * DriverCellRenderer, PortraitCard, StatBar, PortraitLoader.
@@ -63,6 +73,14 @@ public class DriversPanel extends JPanel {
     private final Map<Integer, String> teamNames =
             new HashMap<Integer, String>();
     private final Portraitloader portraitLoader = new Portraitloader();
+
+    // Editing the ratings: the bars are sliders, these buttons save or undo.
+    private final DriverRepository driverRepository = new DriverRepository();
+    private final JButton saveButton = new JButton("Save ratings");
+    private final JButton resetButton = new JButton("Reset");
+    private final JLabel hint = new JLabel(" "); // left of the buttons; see updateButtons()
+    private Driver current;   // the driver shown on the right, null = none yet
+    private boolean saving;   // a save is running in the background
 
     /** Builds the screen and fills the list with the drivers from data. */
     public DriversPanel(SimulationData data) {
@@ -144,7 +162,8 @@ public class DriversPanel extends JPanel {
                 // over the list; wait until the selection is final.
                 if (!event.getValueIsAdjusting()) {
                     Driver selected = driverList.getSelectedValue();
-                    if (selected != null) {
+                    if (selected != null && selected != current) {
+                        askToSaveChanges();
                         displayDriver(selected);
                     }
                 }
@@ -176,19 +195,79 @@ public class DriversPanel extends JPanel {
         return details;
     }
 
-    /** The four statistic bars in a 2 x 2 grid on a card. */
+    /** The four statistic sliders in a 2 x 2 grid, with Save / Reset under them, on a card. */
     private JPanel buildStats() {
-        JPanel stats = new JPanel(new GridLayout(2, 2, 28, 16));
+        JPanel grid = new JPanel(new GridLayout(2, 2, 28, 16));
+        grid.setOpaque(false);
+
+        // Every slider reports its changes to barChanged().
+        StatBar.Listener onChange = new StatBar.Listener() {
+            public void valueChanged(StatBar bar, int value) {
+                barChanged(bar, value);
+            }
+        };
+        StatBar[] bars = { experienceBar, racecraftBar, paceBar, awarenessBar };
+        for (StatBar bar : bars) {
+            bar.setListener(onChange);
+            grid.add(bar);
+        }
+
+        // Hint on the left, buttons on the right.
+        hint.setFont(DriverStyle.font(Font.PLAIN, 11));
+        hint.setForeground(DriverStyle.MUTED);
+
+        styleButton(resetButton, DriverStyle.CARD, DriverStyle.MUTED);
+        resetButton.setBorder(BorderFactory.createLineBorder(DriverStyle.LINE));
+        resetButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (current != null) {
+                    displayDriver(current); // back to the saved values
+                }
+            }
+        });
+        styleButton(saveButton, DriverStyle.RED, Color.WHITE);
+        saveButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                saveRatings();
+            }
+        });
+
+        JPanel buttons = new JPanel(new GridLayout(1, 2, 10, 0));
+        buttons.setOpaque(false);
+        buttons.add(resetButton);
+        buttons.add(saveButton);
+
+        JPanel actions = new JPanel(new BorderLayout(10, 0));
+        actions.setOpaque(false);
+        actions.add(hint, BorderLayout.CENTER);
+        actions.add(buttons, BorderLayout.EAST);
+
+        JPanel stats = new JPanel(new BorderLayout(0, 16));
         stats.setBackground(DriverStyle.CARD);
         stats.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(DriverStyle.LINE),
                 new EmptyBorder(18, 22, 18, 22)));
+        stats.add(grid, BorderLayout.CENTER);
+        stats.add(actions, BorderLayout.SOUTH);
 
-        stats.add(experienceBar);
-        stats.add(racecraftBar);
-        stats.add(paceBar);
-        stats.add(awarenessBar);
+        updateButtons();
         return stats;
+    }
+
+    /**
+     * Flat button. BasicButtonUI removes the operating system's look so
+     * the colours are used as they are.
+     */
+    private static void styleButton(JButton button, Color background, Color foreground) {
+        button.setUI(new BasicButtonUI());
+        button.setFont(DriverStyle.font(Font.BOLD, 13));
+        button.setBackground(background);
+        button.setForeground(foreground);
+        button.setOpaque(true);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder());
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setPreferredSize(new Dimension(120, 34));
     }
 
     // =====================================================
@@ -227,9 +306,124 @@ public class DriversPanel extends JPanel {
         portraitCard.setDriver(photo, driver.getName(), team,
                 driver.getCarNumber(), accent);
 
+        current = driver;
         experienceBar.setValue(driver.getExperience(), accent);
         racecraftBar.setValue(driver.getRacecraft(), accent);
         paceBar.setValue(driver.getPace(), accent);
         awarenessBar.setValue(driver.getAwareness(), accent);
+        updateButtons();
+    }
+
+    // =====================================================
+    // EDITING THE RATINGS
+    // =====================================================
+
+    /** A slider was dragged: mark it as changed if it differs from the saved value. */
+    private void barChanged(StatBar bar, int value) {
+        bar.setChanged(value != savedValue(bar));
+        updateButtons();
+    }
+
+    /** The value of this bar's rating as it is saved for the current driver. */
+    private int savedValue(StatBar bar) {
+        if (bar == experienceBar) {
+            return current.getExperience();
+        }
+        if (bar == racecraftBar) {
+            return current.getRacecraft();
+        }
+        if (bar == paceBar) {
+            return current.getPace();
+        }
+        return current.getAwareness();
+    }
+
+    /** True if any slider differs from the current driver's saved ratings. */
+    private boolean hasChanges() {
+        return current != null
+                && (experienceBar.getValue() != current.getExperience()
+                || racecraftBar.getValue() != current.getRacecraft()
+                || paceBar.getValue() != current.getPace()
+                || awarenessBar.getValue() != current.getAwareness());
+    }
+
+    /**
+     * Save and Reset are only shown when there is something to save (a
+     * disabled flat button is hard to read). GridLayout keeps their space,
+     * so nothing jumps around when they appear.
+     */
+    private void updateButtons() {
+        boolean changed = hasChanges();
+        saveButton.setVisible(changed || saving);
+        resetButton.setVisible(changed && !saving);
+        saveButton.setEnabled(!saving);
+        saveButton.setText(saving ? "Saving..." : "Save ratings");
+        hint.setText(changed ? "Unsaved changes" : "Drag a bar to change a rating");
+    }
+
+    /** Before another driver is shown: offer to save the unsaved changes. */
+    private void askToSaveChanges() {
+        if (!hasChanges() || saving) {
+            return;
+        }
+        int answer = JOptionPane.showConfirmDialog(this,
+                "Save the changed ratings of " + current.getName() + "?",
+                "Unsaved changes", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (answer == JOptionPane.YES_OPTION) {
+            saveRatings();
+        }
+    }
+
+    /**
+     * Writes the four slider values to the database in the background.
+     * Afterwards the Driver object is updated too; the race weekend uses the
+     * same objects, so the next session already uses the new ratings.
+     */
+    private void saveRatings() {
+        if (!hasChanges() || saving) {
+            return;
+        }
+        // Copy everything now: the player may select another driver meanwhile.
+        final Driver driver = current;
+        final int experience = experienceBar.getValue();
+        final int racecraft = racecraftBar.getValue();
+        final int pace = paceBar.getValue();
+        final int awareness = awarenessBar.getValue();
+
+        saving = true;
+        updateButtons();
+
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                driverRepository.updateRatings(driver.getDriverId(),
+                        experience, racecraft, pace, awareness);
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                saving = false;
+                try {
+                    get(); // throws if the save failed
+                    driver.setRatings(experience, racecraft, pace, awareness);
+                    if (driver == current) {
+                        // The saved values are now the shown ones: numbers turn white.
+                        experienceBar.setChanged(false);
+                        racecraftBar.setChanged(false);
+                        paceBar.setChanged(false);
+                        awarenessBar.setChanged(false);
+                    }
+                } catch (Exception e) {
+                    Throwable cause = e instanceof ExecutionException && e.getCause() != null
+                            ? e.getCause() : e;
+                    cause.printStackTrace();
+                    JOptionPane.showMessageDialog(DriversPanel.this,
+                            "The ratings could not be saved.\n" + cause.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                updateButtons();
+            }
+        }.execute();
     }
 }
