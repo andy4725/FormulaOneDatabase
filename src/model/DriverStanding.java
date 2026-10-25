@@ -1,5 +1,8 @@
 package model;
 
+/** A display-ready row in the drivers' championship table.
+ * It includes the driver's team name alongside their position and points.
+ */
 public final class DriverStanding {
     private final int position;
     private final int driverId;

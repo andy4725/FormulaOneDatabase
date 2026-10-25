@@ -16,7 +16,9 @@ import database.Database;
 import model.Driver;
 import model.QualifyingResult;
 
-/** Reads and writes qualifying session data. */
+/** Reads and writes qualifying attempts, final positions, and the race grid.
+ * Session laps are saved separately so the next phase can resume from prior results.
+ */
 public class QualifyingRepository {
 
     public void saveSessionLaps(
@@ -28,6 +30,7 @@ public class QualifyingRepository {
         try (Connection connection = Database.getConnection()) {
             connection.setAutoCommit(false);
             try {
+                // Re-simulating a session replaces its laps instead of appending duplicates.
                 deleteSessionLaps(connection, seasonEventId, session);
                 insertSessionLaps(connection, seasonEventId, session, results);
                 connection.commit();
@@ -70,6 +73,7 @@ public class QualifyingRepository {
     public List<Driver> findAdvancingDrivers(
             int seasonEventId, String session, int limit, List<Driver> allDrivers)
             throws SQLException {
+        // The query returns IDs in lap-time order; map them to the caller's driver objects.
         Map<Integer, Driver> driversById = indexDriversById(allDrivers);
         List<Integer> driverIds = findAdvancingDriverIds(seasonEventId, session, limit);
         List<Driver> advancingDrivers = new ArrayList<Driver>();
@@ -118,6 +122,7 @@ public class QualifyingRepository {
             List<QualifyingResult> q1Results,
             List<QualifyingResult> q2Results,
             List<QualifyingResult> q3Results) throws SQLException {
+        // Final classification and grid are updated together after Q3 completes.
         validateEventId(seasonEventId);
         validateFinalResults(q1Results, q2Results, q3Results);
 
@@ -151,8 +156,10 @@ public class QualifyingRepository {
                 + "ON CONFLICT(season_event_id, driver_id) "
                 + "DO UPDATE SET grid_position = excluded.grid_position";
 
+        // Grid order is Q3, then Q2 eliminations, then Q1 eliminations.
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             int position = 1;
+            // Q3 finishers lead; eliminated drivers follow in the order they left qualifying.
             for (QualifyingResult result : q3Results) {
                 addGridPosition(statement, seasonEventId, position++, result);
             }
@@ -186,6 +193,7 @@ public class QualifyingRepository {
             List<QualifyingResult> q3Results) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             int position = 1;
+            // Q3 positions are final; only each earlier session's eliminated drivers are added.
             for (QualifyingResult result : q3Results) {
                 addFinalResult(statement, seasonEventId, position++, result, null);
             }
@@ -286,6 +294,7 @@ public class QualifyingRepository {
     }
 
     private double roundToMilliseconds(double seconds) {
+        // Keep stored lap times at the same precision used to compare fastest laps.
         return Math.round(seconds * 1000.0) / 1000.0;
     }
 
@@ -293,6 +302,7 @@ public class QualifyingRepository {
         validateEventId(eventId);
         validateSession(session);
 
+        // Group attempts before constructing results because the table stores one row per lap.
         Map<Integer, List<Double>> lapTimes = loadLapTimesByDriver(eventId, session);
         Map<Integer, Driver> driversById = indexDriversById(drivers);
         List<QualifyingResult> results = buildResults(lapTimes, driversById);

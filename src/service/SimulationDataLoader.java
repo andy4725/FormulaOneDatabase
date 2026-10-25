@@ -8,6 +8,9 @@ import repository.DriverRepository;
 import repository.SponsorRepository;
 import repository.TeamRepository;
 
+/** Builds the startup data bundle from the database-backed repositories.
+ * This keeps individual lookup details out of the application entry point.
+ */
 public class SimulationDataLoader {
     public SimulationData load() throws SQLException {
         return new SimulationData(

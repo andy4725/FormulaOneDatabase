@@ -1,5 +1,8 @@
 package model;
 
+/** A display-ready row in the teams' championship table.
+ * Points combine the results earned by both drivers on the team.
+ */
 public final class TeamStanding {
     private final int position;
     private final int teamId;

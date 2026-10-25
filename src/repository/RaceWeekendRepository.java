@@ -14,7 +14,9 @@ import model.Driver;
 import model.QualifyingResult;
 import model.WeekendEvent;
 
-/** Reads and writes the state of the current race weekend. */
+/** Finds the next playable event and manages qualifying state for that weekend.
+ * It also reconstructs the starting grid from the saved final classification.
+ */
 public class RaceWeekendRepository {
 
     /**
@@ -24,6 +26,7 @@ public class RaceWeekendRepository {
      * Returns null when there is no such weekend.
      */
     public WeekendEvent findCurrentEvent(int saveSlotId) throws SQLException {
+        // A weekend is still pending until it has at least one classified finish position.
         String sql = "SELECT se.season_event_id, se.round_number, gp.name, gp.circuit_id "
                 + "FROM season_events se "
                 + "JOIN seasons s ON s.season_id = se.season_id "
@@ -53,6 +56,7 @@ public class RaceWeekendRepository {
     /** Final qualifying order (the starting grid), best lap included. */
     public List<QualifyingResult> loadStartingGrid(
             int seasonEventId, List<Driver> drivers) throws SQLException {
+        // Convert stored driver IDs back to the shared driver objects for the caller.
         Map<Integer, Driver> driversById = new HashMap<Integer, Driver>();
         for (Driver driver : drivers) {
             driversById.put(Integer.valueOf(driver.getDriverId()), driver);

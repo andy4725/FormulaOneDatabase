@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+/** Connects qualifying rules, the simulator, and the repository.
+ * Each call generates attempts for one session and saves those laps for later phases.
+ */
 public class QualifyingService {
     private static final Random RANDOM = new Random();
     private final QualifyingSimulator simulator;
@@ -38,8 +41,10 @@ public class QualifyingService {
         List<Driver> drivers,
         List<Team> teams) throws SQLException {
 
+        // Reject invalid session requests before generating or persisting any laps.
         validateRequest(seasonEventId, session);
 
+        // Each entrant receives an independent attempt count for this session.
         Map<Integer, Integer> lapCountsByDriver = new HashMap<Integer, Integer>();
 
         for (Driver driver : drivers) {

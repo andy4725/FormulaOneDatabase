@@ -16,6 +16,9 @@ import model.DriverRacePerformance;
 import model.RaceResult;
 import model.Team;
 
+/** Simulates every driver's laps and the passing that changes the running order.
+ * A seeded constructor supports repeatable outcomes when deterministic runs are needed.
+ */
 public class RaceSimulator {
     private final Random random;
     private final RacePerformanceCalculator performanceCalculator;
@@ -79,11 +82,13 @@ public class RaceSimulator {
 
         sortByGridPosition(runningOrder);
 
+        // Keep the running order updated after every lap so later passes use current gaps.
         for (int lap = 0; lap < circuit.getRaceLaps(); lap++) {
             simulateLap(runningOrder);
         }
 
         List<RaceResult> results = new ArrayList<RaceResult>();
+        // The final order becomes the classified finish; lap history stays attached to each racer.
         for (int i = 0; i < runningOrder.size(); i++) {
             Racer racer = runningOrder.get(i);
             results.add(new RaceResult(
@@ -140,6 +145,7 @@ public class RaceSimulator {
     private void simulateLap(List<Racer> runningOrder) {
         Map<Racer, Double> lapTimes = new HashMap<Racer, Double>();
 
+        // Generate one lap for every racer before resolving passes on this lap.
         for (Racer racer : runningOrder) {
             double lapTime = simulateLapTime(racer.performance);
             racer.lapTimes.add(lapTime);
@@ -174,6 +180,7 @@ public class RaceSimulator {
             DriverRacePerformance behindPerformance,
             double lapTimeAdvantage) {
 
+        // Faster pace and stronger racecraft raise the chance of a successful pass.
         double probability =
                 0.20
                 + behindPerformance.getOvertakingRating() * 0.004

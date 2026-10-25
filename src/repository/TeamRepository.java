@@ -10,6 +10,9 @@ import model.Team;
 
 import java.util.ArrayList;
 
+/** Reads teams together with their separately stored performance attributes.
+ * Sponsor modifiers are included so the model can expose adjusted pace.
+ */
 public class TeamRepository {
     List<Team> teamList;
 

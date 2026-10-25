@@ -2,6 +2,9 @@ package model;
 
 import java.util.List;
 
+/** Groups the reference data loaded for the running application.
+ * Services use these shared profiles when simulating a season weekend.
+ */
 public class SimulationData {
     private final List<Driver> drivers;
     private final List<Team> teams;

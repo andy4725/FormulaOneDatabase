@@ -9,6 +9,9 @@ import java.util.ArrayList;
 import database.Database;
 import model.Circuit;
 
+/** Maps circuit rows into the objects used by the application.
+ * The benchmark columns are required by qualifying and race calculations.
+ */
 public class CircuitRepository {
     List<Circuit> circuitList;
 

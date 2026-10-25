@@ -1,5 +1,8 @@
 package model;
 
+/** Circuit details used to configure both simulation types.
+ * Benchmark lap times give each simulation a track-specific baseline.
+ */
 public class Circuit {
     private int circuitId;
     private String name;

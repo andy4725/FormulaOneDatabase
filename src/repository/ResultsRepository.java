@@ -11,7 +11,9 @@ import database.Database;
 import model.RaceResultEntry;
 import model.RaceSummary;
 
-/** Read-only queries for the Results screen. */
+/** Read-only queries that assemble season and race data for the results view.
+ * Race lap totals and best laps are calculated from the stored lap records.
+ */
 public class ResultsRepository {
 
     /** Every race of the season in round order, with the winner if it was run. */
@@ -57,6 +59,7 @@ public class ResultsRepository {
     public List<RaceResultEntry> getRaceResults(int seasonEventId) throws SQLException {
         validateId(seasonEventId, "season event");
 
+        // LEFT JOIN retains a result row even when a driver has no recorded laps.
         String sql = "SELECT rr.driver_id, d.name AS driver_name, t.name AS team_name, "
                 + "rr.grid_position, rr.finishing_position, rr.result_status, "
                 + "rr.points, rr.fastest_lap, "

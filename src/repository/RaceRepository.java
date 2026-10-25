@@ -13,6 +13,9 @@ import java.util.Set;
 import database.Database;
 import model.RaceResult;
 
+/** Stores and retrieves the race data needed by the simulation workflow.
+ * A race save updates its result rows, lap history, and season status atomically.
+ */
 public class RaceRepository {
     public Map<Integer, Integer> findGridPositions(int seasonEventId) throws SQLException {
         validateEventId(seasonEventId);
@@ -36,6 +39,7 @@ public class RaceRepository {
             }
         }
 
+        // Older saves may have qualifying classification but no explicit grid rows.
         if (gridPositions.isEmpty()) {
             gridPositions = findQualifyingPositions(seasonEventId);
         }
@@ -77,6 +81,7 @@ public class RaceRepository {
         validateResults(results);
         validatePoints(results, pointsByDriverId);
 
+        // Classification and lap rows must agree, so replace them in one transaction.
         double fastestLap = findFastestLap(results);
 
         try (Connection connection = Database.getConnection()) {
@@ -120,6 +125,7 @@ public class RaceRepository {
     private void markSeasonCompleteIfAllRacesFinished(
             Connection connection,
             int seasonEventId) throws SQLException {
+        // The season closes only after every event has reached RACE_COMPLETE.
         String sql = "UPDATE seasons "
                 + "SET status = 'COMPLETED', completed_at = CURRENT_TIMESTAMP "
                 + "WHERE season_id = ("
@@ -217,6 +223,7 @@ public class RaceRepository {
     private double findFastestLap(List<RaceResult> results) {
         double fastestLap = Double.MAX_VALUE;
 
+        // Round before comparing so the recorded fastest lap matches persisted precision.
         for (RaceResult result : results) {
             for (Double lapTime : result.getLapTimes()) {
                 fastestLap = Math.min(
@@ -229,6 +236,7 @@ public class RaceRepository {
     }
 
     private boolean hasFastestLap(RaceResult result, double fastestLap) {
+        // One driver is flagged if any stored lap matches the event's rounded minimum.
         for (Double lapTime : result.getLapTimes()) {
             if (Double.compare(
                     roundToMilliseconds(lapTime),

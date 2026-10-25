@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/** One driver's race outcome, including starting/finishing places and lap history.
+ * Lap times are copied and exposed read-only so the saved result stays consistent.
+ */
 public class RaceResult {
     private final Driver driver;
     private final int gridPosition;
@@ -35,6 +38,7 @@ public class RaceResult {
         this.driver = driver;
         this.gridPosition = gridPosition;
         this.finishingPosition = finishingPosition;
+        // Keep a defensive copy because these laps are used for totals and fastest lap.
         this.lapTimes = Collections.unmodifiableList(new ArrayList<Double>(lapTimes));
     }
 

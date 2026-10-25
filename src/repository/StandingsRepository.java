@@ -11,6 +11,9 @@ import database.Database;
 import model.DriverStanding;
 import model.TeamStanding;
 
+/** Aggregates completed race points and ranks the championship tables.
+ * Drivers or teams without points remain in the result with a zero total.
+ */
 public class StandingsRepository {
 
     /** The newest season of a save slot, or 0 when the slot has none. */
@@ -58,6 +61,7 @@ public class StandingsRepository {
                 while (result.next()) {
                     double points = result.getDouble("points");
 
+                    // Equal point totals share a position; the next position skips a rank.
                     if (rowNumber == 0
                             || Double.compare(points, previousPoints) != 0) {
                         position = rowNumber + 1;
@@ -111,6 +115,7 @@ public class StandingsRepository {
                 while (result.next()) {
                     double points = result.getDouble("points");
 
+                    // Match the same tied-position rule used for the driver table.
                     if (rowNumber == 0
                             || Double.compare(points, previousPoints) != 0) {
                         position = rowNumber + 1;
