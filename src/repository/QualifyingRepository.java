@@ -19,7 +19,7 @@ import model.QualifyingResult;
 /** Reads and writes qualifying attempts, final positions, and the race grid.
  * Session laps are saved separately so the next phase can resume from prior results.
  */
-public class QualifyingRepository {
+public class QualifyingRepository implements QualifyingStore {
 
     public void saveSessionLaps(
             int seasonEventId, String session, List<QualifyingResult> results)

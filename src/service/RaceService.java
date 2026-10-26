@@ -9,13 +9,14 @@ import model.Driver;
 import model.RaceResult;
 import model.Team;
 import repository.RaceRepository;
+import repository.RaceResultsStore;
 
 /** Orchestrates the race workflow from qualifying grid through saved results.
  * Simulation, points calculation, and persistence remain separate collaborators.
  */
 public class RaceService {
     private final RaceSimulator simulator;
-    private final RaceRepository repository;
+    private final RaceResultsStore repository;
     private final RacePointsCalculator pointsCalculator;
 
     public RaceService() {
@@ -25,13 +26,13 @@ public class RaceService {
 
     public RaceService(
             RaceSimulator simulator,
-            RaceRepository repository) {
+            RaceResultsStore repository) {
         this(simulator, repository, new RacePointsCalculator());
     }
 
     public RaceService(
             RaceSimulator simulator,
-            RaceRepository repository,
+            RaceResultsStore repository,
             RacePointsCalculator pointsCalculator) {
         if (simulator == null || repository == null
                 || pointsCalculator == null) {

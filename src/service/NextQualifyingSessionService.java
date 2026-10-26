@@ -9,12 +9,13 @@ import model.QualifyingResult;
 import model.QualifyingSessionOutcome;
 import model.Team;
 import repository.QualifyingRepository;
+import repository.QualifyingStore;
 
 /** Coordinates the three qualifying phases for a race weekend.
  * It resumes from saved lap data, advances the fastest drivers, then records the grid.
  */
 public class NextQualifyingSessionService {
-    private final QualifyingRepository repository;
+    private final QualifyingStore repository;
     private final QualifyingService qualifyingService;
 
     public NextQualifyingSessionService() {
@@ -22,7 +23,7 @@ public class NextQualifyingSessionService {
     }
 
     public NextQualifyingSessionService(
-            QualifyingRepository repository, QualifyingSimulator simulator) {
+            QualifyingStore repository, QualifyingSimulator simulator) {
         this.repository = repository;
         this.qualifyingService = new QualifyingService(simulator, repository);
     }

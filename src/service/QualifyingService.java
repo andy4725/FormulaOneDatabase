@@ -5,6 +5,7 @@ import model.Driver;
 import model.QualifyingResult;
 import model.Team;
 import repository.QualifyingRepository;
+import repository.QualifyingStore;
 
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -18,7 +19,7 @@ import java.util.Random;
 public class QualifyingService {
     private static final Random RANDOM = new Random();
     private final QualifyingSimulator simulator;
-    private final QualifyingRepository repository;
+    private final QualifyingStore repository;
 
     public QualifyingService() {
         this(new QualifyingSimulator(), new QualifyingRepository());
@@ -29,7 +30,7 @@ public class QualifyingService {
     }
 
     public QualifyingService(
-            QualifyingSimulator simulator, QualifyingRepository repository) {
+            QualifyingSimulator simulator, QualifyingStore repository) {
         this.simulator = simulator;
         this.repository = repository;
     }

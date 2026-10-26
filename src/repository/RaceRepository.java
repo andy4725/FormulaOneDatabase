@@ -16,7 +16,7 @@ import model.RaceResult;
 /** Stores and retrieves the race data needed by the simulation workflow.
  * A race save updates its result rows, lap history, and season status atomically.
  */
-public class RaceRepository {
+public class RaceRepository implements RaceResultsStore {
     public Map<Integer, Integer> findGridPositions(int seasonEventId) throws SQLException {
         validateEventId(seasonEventId);
 
