@@ -2,6 +2,7 @@ package model;
 
 /**
  * One Grand Prix weekend of the current season (a row of season_events).
+ * The event ID links session and race data; the round and circuit identify what is next.
  */
 public final class WeekendEvent {
     private final int seasonEventId;

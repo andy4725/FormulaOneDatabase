@@ -8,6 +8,9 @@ import java.util.Set;
 
 import model.RaceResult;
 
+/** Converts finishing places into points for each driver.
+ * Positions outside the scoring places receive zero points.
+ */
 public class RacePointsCalculator {
     private static final int[] POINTS_BY_POSITION = {
         25, 18, 15, 12, 10, 8, 6, 4, 2, 1

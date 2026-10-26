@@ -9,6 +9,9 @@ import java.util.ArrayList;
 import database.Database;
 import model.Driver;
 
+/** Reads driver profiles with their separately stored skill ratings.
+ * Rating updates use an upsert so drivers without a stats row can be edited too.
+ */
 public class DriverRepository {
     List<Driver> driverList;
 

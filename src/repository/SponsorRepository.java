@@ -10,6 +10,9 @@ import model.Sponsor;
 
 import java.util.ArrayList;
 
+/** Maps sponsor rows to profiles used by team and presentation code.
+ * Results are returned in name order for consistent display.
+ */
 public class SponsorRepository {
     List<Sponsor> sponsorList;
 

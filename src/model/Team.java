@@ -1,4 +1,7 @@
 package model;
+/** A team profile with its presentation data and simulation ratings.
+ * Pace includes the sponsor modifier; reliability is returned unchanged.
+ */
 public class Team {
     private int teamId;
     private String name;
@@ -30,6 +33,7 @@ public class Team {
     }
 
     public int getPace() {
+        // Apply sponsor funding's modifier here so callers always receive adjusted pace.
         return Math.round(pace * (1 + sponsorModifier));
     }
 

@@ -10,6 +10,9 @@ import model.RaceResult;
 import model.Team;
 import repository.RaceRepository;
 
+/** Orchestrates the race workflow from qualifying grid through saved results.
+ * Simulation, points calculation, and persistence remain separate collaborators.
+ */
 public class RaceService {
     private final RaceSimulator simulator;
     private final RaceRepository repository;
@@ -47,11 +50,13 @@ public class RaceService {
             List<Driver> drivers,
             List<Team> teams) throws SQLException {
 
+        // Validate before querying the grid so invalid event IDs fail at the boundary.
         if (seasonEventId <= 0) {
             throw new IllegalArgumentException(
                     "A valid season event ID is required.");
         }
 
+        // The race cannot start until qualifying has supplied a starting grid.
         Map<Integer, Integer> gridPositions =
                 repository.findGridPositions(seasonEventId);
 

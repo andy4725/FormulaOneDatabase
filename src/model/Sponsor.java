@@ -1,5 +1,8 @@
 package model;
 
+/** A sponsor's database identity, team association, logo, and funding amount.
+ * Funding can be used by team-related calculations and presentation.
+ */
 public class Sponsor {
     private int sponsorId;
     private int teamId;

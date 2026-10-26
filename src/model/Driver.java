@@ -1,4 +1,7 @@
 package model;
+/** A driver profile with identity, team, car, and skill information.
+ * The ratings feed the qualifying and race performance calculations.
+ */
 public class Driver {
     private int driverId;
     private int teamId;

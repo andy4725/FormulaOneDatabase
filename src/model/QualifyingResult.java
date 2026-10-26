@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/** A driver's outcome in one qualifying session.
+ * The lap list is retained for display, while the fastest lap determines order.
+ */
 public class QualifyingResult {
     private final Driver driver;
     private final double performanceRating;
@@ -21,6 +24,7 @@ public class QualifyingResult {
 
         this.driver = driver;
         this.performanceRating = performanceRating;
+        // Copy and wrap the input so later caller changes cannot alter this result.
         this.lapTimes = Collections.unmodifiableList(new ArrayList<Double>(lapTimes));
 
         double bestTime = Double.MAX_VALUE;

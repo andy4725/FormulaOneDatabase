@@ -1,5 +1,8 @@
 package model;
 
+/** Derived values consumed by the lap-by-lap race simulator.
+ * Keeping these values together avoids recalculating ratings during each lap.
+ */
 public final class DriverRacePerformance {
     private final double baseLapTimeSeconds;
     private final double lapTimeVariation;

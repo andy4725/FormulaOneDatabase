@@ -8,7 +8,11 @@ import gui.MainMenu.MainWindow;
 import model.SimulationData;
 import service.SimulationDataLoader;
 
+/** Starts the application after its shared reference data has loaded.
+ * The window is created on Swing's event thread so UI work runs safely.
+ */
 public class App {
+    /** Loads app data, reports an empty team database, or opens the main window. */
     public static void main(String[] args) throws SQLException {
         final SimulationData data = new SimulationDataLoader().load();
 

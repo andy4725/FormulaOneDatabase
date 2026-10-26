@@ -4,9 +4,13 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-/** Provides connections to the project's SQLite database. */
+/** Opens SQLite connections and applies connection-level settings.
+ * The first connection also upgrades the few schema details required by current code.
+ */
 public final class Database {
+    // The SQLite file is resolved from the application's working directory.
     private static final String DATABASE_URL = "jdbc:sqlite:F1Database.sqlite3";
+    // Schema setup only needs to run once per process after the first connection opens.
     private static boolean raceGridSchemaChecked;
 
     private Database() {
@@ -23,6 +27,7 @@ public final class Database {
 
         Connection connection = DriverManager.getConnection(DATABASE_URL);
         try {
+            // SQLite enforces foreign keys per connection, so configure each new one.
             Statement statement = connection.createStatement();
             try {
                 statement.execute("PRAGMA foreign_keys = ON");
@@ -42,6 +47,7 @@ public final class Database {
         if (raceGridSchemaChecked) {
             return;
         }
+        // Migrate older databases before adding or using the save-slot metadata.
         if (resultStatusIsRequired(connection)) {
             makeRaceResultStatusNullable(connection);
         }
@@ -52,11 +58,13 @@ public final class Database {
     /** Makes sure save_slots has the last_played column and slots 1-3. */
     private static void ensureSaveSlots(Connection connection)
             throws SQLException {
+        // Existing databases may predate last_played; add it without replacing user data.
         if (!hasColumn(connection, "save_slots", "last_played")) {
             try (Statement statement = connection.createStatement()) {
                 statement.execute("ALTER TABLE save_slots ADD COLUMN last_played TEXT");
             }
         }
+        // Seed the standard slots while preserving any names or data already saved.
         try (Statement statement = connection.createStatement()) {
             for (int slot = 1; slot <= 3; slot++) {
                 statement.execute("INSERT OR IGNORE INTO save_slots (save_slot_id, name) "
@@ -67,6 +75,7 @@ public final class Database {
 
     private static boolean hasColumn(Connection connection, String table, String column)
             throws SQLException {
+        // PRAGMA table_info returns one row per column in the requested table.
         try (Statement statement = connection.createStatement();
              java.sql.ResultSet columns = statement.executeQuery("PRAGMA table_info(" + table + ")")) {
             while (columns.next()) {
@@ -80,6 +89,7 @@ public final class Database {
 
     private static boolean resultStatusIsRequired(Connection connection)
             throws SQLException {
+        // SQLite's notnull flag indicates whether legacy schema requires a status value.
         try (Statement statement = connection.createStatement();
              java.sql.ResultSet columns = statement.executeQuery("PRAGMA table_info(race_results)")) {
             while (columns.next()) {
@@ -93,8 +103,11 @@ public final class Database {
 
     private static void makeRaceResultStatusNullable(Connection connection)
             throws SQLException {
+        // SQLite cannot directly relax a NOT NULL constraint, so rebuild the table.
         connection.setAutoCommit(false);
         try (Statement statement = connection.createStatement()) {
+            // Preserve the result table's keys, checks, and relationships while allowing
+            // result_status to be NULL for results that do not yet have a status.
             statement.execute("CREATE TABLE race_results_new ("
                     + "season_event_id INTEGER NOT NULL, "
                     + "driver_id INTEGER NOT NULL, "
@@ -115,13 +128,16 @@ public final class Database {
                     + "result_status, points, fastest_lap) "
                     + "SELECT season_event_id, driver_id, grid_position, finishing_position, "
                     + "result_status, points, fastest_lap FROM race_results");
+            // Replace the old table only after its existing rows have been copied.
             statement.execute("DROP TABLE race_results");
             statement.execute("ALTER TABLE race_results_new RENAME TO race_results");
             connection.commit();
         } catch (SQLException e) {
+            // Keep the old table intact if any part of the migration fails.
             connection.rollback();
             throw e;
         } finally {
+            // Restore the connection's normal transaction behavior for callers.
             connection.setAutoCommit(true);
         }
     }

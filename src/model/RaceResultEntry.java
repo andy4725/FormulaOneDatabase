@@ -1,6 +1,8 @@
 package model;
 
-/** One driver's saved result in one race (a row of race_results plus lap totals). */
+/** One driver's saved result assembled for the results view.
+ * It combines the classification row with totals derived from the lap history.
+ */
 public final class RaceResultEntry {
     private final int driverId;
     private final String driverName;

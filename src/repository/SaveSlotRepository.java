@@ -9,6 +9,7 @@ import database.Database;
 
 /**
  * Reads and writes the save slots in the save_slots table.
+ * Season rows hold game progress; this repository also tracks the last-played time.
  *
  *   save_slots (save_slot_id, name, last_played)
  *

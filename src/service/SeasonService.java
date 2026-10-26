@@ -10,11 +10,15 @@ import java.util.ArrayList;
 
 import database.Database;
 
+/** Manages the season lifecycle for save slots.
+ * Starting a season snapshots the current Grand Prix list into ordered rounds.
+ */
 public class SeasonService {
     public void startSeason(int slotId) throws SQLException {
         if(slotId < 1 || slotId > 3)
             throw new IllegalArgumentException("Pick a slot between 1 and 3.");
 
+        // Season and calendar creation share a transaction to avoid incomplete saves.
         try(Connection connection = Database.getConnection()) {
             connection.setAutoCommit(false);
 
@@ -67,6 +71,7 @@ public class SeasonService {
     private List<Integer> getSeasonCalendar() throws SQLException {
         List<Integer> grandPrixIDs = new ArrayList<Integer>();
 
+        // The circuit order provides a stable round sequence for the new season.
         String sql = 
             "SELECT grand_prix.grand_prix_id " +
             "FROM grand_prix " +

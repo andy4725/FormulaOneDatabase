@@ -1,6 +1,8 @@
 package model;
 
-/** One race of a season, as shown in the list of the Results screen. */
+/** Compact information about one scheduled or completed season race.
+ * The winner is absent until the race has a classified first-place result.
+ */
 public final class RaceSummary {
     private final int seasonEventId;
     private final int roundNumber;

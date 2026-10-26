@@ -7,6 +7,9 @@ import model.DriverStanding;
 import model.TeamStanding;
 import repository.StandingsRepository;
 
+/** Exposes the season standings queries to application callers.
+ * Ranking and points aggregation are implemented by the repository.
+ */
 public class StandingsService {
     private final StandingsRepository repository;
 

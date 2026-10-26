@@ -13,6 +13,9 @@ import model.Driver;
 import model.Team;
 import model.QualifyingResult;
 
+/** Calculates each driver's qualifying attempts and orders the field by best lap.
+ * Ratings shift the circuit baseline, with small random differences between attempts.
+ */
 public class QualifyingSimulator {
     private static final double TEAM_PACE_WEIGHT = 0.35;
     private static final double DRIVER_PACE_WEIGHT = 0.35;
@@ -50,6 +53,7 @@ public class QualifyingSimulator {
         }
 
         validateInputs(circuit, drivers, teams);
+        // Resolve each driver's team once so per-driver simulation uses a direct lookup.
         Map<Integer, Team> teamsById = indexTeamsById(teams);
         List<QualifyingResult> results = new ArrayList<QualifyingResult>();
 
@@ -99,6 +103,7 @@ public class QualifyingSimulator {
     }
 
     private double calculatePerformanceRating(Driver driver, Team team) {
+        // Normalize the weighted inputs so the rating stays on the same scale as attributes.
         double rating = (
                 TEAM_PACE_WEIGHT * team.getPace() +
                 DRIVER_PACE_WEIGHT * driver.getPace() +

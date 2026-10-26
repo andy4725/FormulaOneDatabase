@@ -10,6 +10,9 @@ import model.QualifyingSessionOutcome;
 import model.Team;
 import repository.QualifyingRepository;
 
+/** Coordinates the three qualifying phases for a race weekend.
+ * It resumes from saved lap data, advances the fastest drivers, then records the grid.
+ */
 public class NextQualifyingSessionService {
     private final QualifyingRepository repository;
     private final QualifyingService qualifyingService;
@@ -27,6 +30,7 @@ public class NextQualifyingSessionService {
     public QualifyingSessionOutcome simulateNextSession(
             int eventId, Circuit circuit, List<Driver> allDrivers, List<Team> teams)
             throws SQLException {
+        // Derive the next phase from persisted sessions so restarts can continue safely.
         String session = determineNextQualifyingSession(eventId);
         List<Driver> drivers = selectDriversForSession(session, eventId, allDrivers);
 
@@ -51,6 +55,7 @@ public class NextQualifyingSessionService {
         boolean q2Complete = repository.sessionHasLaps(eventId, "Q2");
         boolean q3Complete = repository.sessionHasLaps(eventId, "Q3");
 
+        // Later-session data without its predecessor indicates an invalid save state.
         if ((q2Complete && !q1Complete) || (q3Complete && !q2Complete)) {
             throw new IllegalStateException("Qualifying session data is out of order.");
         }
@@ -65,6 +70,7 @@ public class NextQualifyingSessionService {
             String session, int eventId, List<Driver> allDrivers) throws SQLException {
         if ("Q1".equals(session)) return allDrivers;
 
+        // Q1 starts with the full field; Q2 and Q3 use the previous phase's fastest runners.
         String previousSession = "Q2".equals(session) ? "Q1" : "Q2";
         int count = "Q2".equals(session) ? 16 : 10;
         return advancingDrivers(eventId, previousSession, count, allDrivers);
@@ -80,6 +86,7 @@ public class NextQualifyingSessionService {
     private void saveFinalClassification(
             int eventId, List<Driver> allDrivers, List<QualifyingResult> q3Results)
             throws SQLException {
+        // Reuse each session's saved laps to classify eliminated drivers as well as Q3 runners.
         List<QualifyingResult> q1Results =
                 repository.loadSessionResults(eventId, "Q1", allDrivers);
         List<QualifyingResult> q2Results =

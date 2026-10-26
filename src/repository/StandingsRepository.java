@@ -11,6 +11,10 @@ import database.Database;
 import model.DriverStanding;
 import model.TeamStanding;
 
+/** Aggregates completed race points and ranks the championship tables.
+ * Equal totals are ordered by name but still receive distinct positions.
+ * Drivers or teams without points remain in the result with a zero total.
+ */
 public class StandingsRepository {
 
     /** The newest season of a save slot, or 0 when the slot has none. */
@@ -51,27 +55,17 @@ public class StandingsRepository {
             statement.setInt(1, seasonId);
 
             try (ResultSet result = statement.executeQuery()) {
-                int rowNumber = 0;
                 int position = 0;
-                double previousPoints = 0.0;
 
                 while (result.next()) {
                     double points = result.getDouble("points");
 
-                    if (rowNumber == 0
-                            || Double.compare(points, previousPoints) != 0) {
-                        position = rowNumber + 1;
-                    }
-
                     standings.add(new DriverStanding(
-                            position,
+                            ++position,
                             result.getInt("driver_id"),
                             result.getString("driver_name"),
                             result.getString("team_name"),
                             points));
-
-                    previousPoints = points;
-                    rowNumber++;
                 }
             }
         }
@@ -104,27 +98,17 @@ public class StandingsRepository {
             statement.setInt(1, seasonId);
 
             try (ResultSet result = statement.executeQuery()) {
-                int rowNumber = 0;
                 int position = 0;
-                double previousPoints = 0.0;
 
                 while (result.next()) {
                     double points = result.getDouble("points");
 
-                    if (rowNumber == 0
-                            || Double.compare(points, previousPoints) != 0) {
-                        position = rowNumber + 1;
-                    }
-
                     standings.add(new TeamStanding(
-                            position,
+                            ++position,
                             result.getInt("team_id"),
                             result.getString("team_name"),
                             result.getString("logo_path"),
                             points));
-
-                    previousPoints = points;
-                    rowNumber++;
                 }
             }
         }
