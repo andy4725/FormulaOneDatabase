@@ -14,7 +14,15 @@ import service.SimulationDataLoader;
 public class App {
     /** Loads app data, reports an empty team database, or opens the main window. */
     public static void main(String[] args) throws SQLException {
-        final SimulationData data = new SimulationDataLoader().load();
+        final SimulationData data;
+
+        try {
+            data = new SimulationDataLoader().load();
+        } catch (SQLException e) {
+            System.err.println("Could not load simulator data." + e.getMessage());
+            e.printStackTrace();
+            return;
+        }
 
         if (data.getTeams().isEmpty()) {
             System.out.println("No teams found in the database.");
@@ -29,7 +37,4 @@ public class App {
             }
         });
     }
-
 }
-
-
