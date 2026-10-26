@@ -12,7 +12,6 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -27,7 +26,6 @@ import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -36,7 +34,6 @@ import javax.swing.plaf.basic.BasicButtonUI;
 import model.Driver;
 import model.SimulationData;
 import model.Team;
-import repository.DriverRepository;
 
 
 /**
@@ -44,7 +41,7 @@ import repository.DriverRepository;
  *
  * Left:  list of drivers (number badge, name, team).
  * Right: large portrait card and four statistic bars. The bars are sliders;
- *        "Save ratings" writes the changes to the database (for every slot).
+ *        "Apply ratings" uses the changes for the current app session.
  *
  * The drawing is done by small helper classes in this package:
  * DriverCellRenderer, PortraitCard, StatBar, PortraitLoader.
@@ -74,13 +71,11 @@ public class DriversPanel extends JPanel {
             new HashMap<Integer, String>();
     private final Portraitloader portraitLoader = new Portraitloader();
 
-    // Editing the ratings: the bars are sliders, these buttons save or undo.
-    private final DriverRepository driverRepository = new DriverRepository();
-    private final JButton saveButton = new JButton("Save ratings");
+    // Rating edits update the shared in-memory driver objects, not reference data in SQLite.
+    private final JButton saveButton = new JButton("Apply ratings");
     private final JButton resetButton = new JButton("Reset");
     private final JLabel hint = new JLabel(" "); // left of the buttons; see updateButtons()
     private Driver current;   // the driver shown on the right, null = none yet
-    private boolean saving;   // a save is running in the background
 
     /** Builds the screen and fills the list with the drivers from data. */
     public DriversPanel(SimulationData data) {
@@ -228,7 +223,7 @@ public class DriversPanel extends JPanel {
         styleButton(saveButton, DriverStyle.RED, Color.WHITE);
         saveButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                saveRatings();
+                applyRatings();
             }
         });
 
@@ -354,76 +349,40 @@ public class DriversPanel extends JPanel {
      */
     private void updateButtons() {
         boolean changed = hasChanges();
-        saveButton.setVisible(changed || saving);
-        resetButton.setVisible(changed && !saving);
-        saveButton.setEnabled(!saving);
-        saveButton.setText(saving ? "Saving..." : "Save ratings");
-        hint.setText(changed ? "Unsaved changes" : "Drag a bar to change a rating");
+        saveButton.setVisible(changed);
+        resetButton.setVisible(changed);
+        saveButton.setEnabled(true);
+        saveButton.setText("Apply ratings");
+        hint.setText(changed ? "Changes apply for this session"
+                : "Drag a bar to change a rating");
     }
 
-    /** Before another driver is shown: offer to save the unsaved changes. */
+    /** Before another driver is shown: offer to apply the pending changes. */
     private void askToSaveChanges() {
-        if (!hasChanges() || saving) {
+        if (!hasChanges()) {
             return;
         }
         int answer = JOptionPane.showConfirmDialog(this,
-                "Save the changed ratings of " + current.getName() + "?",
-                "Unsaved changes", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                "Apply the changed ratings of " + current.getName()
+                        + " for this session?",
+                "Unapplied changes", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
         if (answer == JOptionPane.YES_OPTION) {
-            saveRatings();
+            applyRatings();
         }
     }
 
-    /**
-     * Writes the four slider values to the database in the background.
-     * Afterwards the Driver object is updated too; the race weekend uses the
-     * same objects, so the next session already uses the new ratings.
-     */
-    private void saveRatings() {
-        if (!hasChanges() || saving) {
+    /** Applies the four slider values to the shared in-memory driver for this session. */
+    private void applyRatings() {
+        if (!hasChanges()) {
             return;
         }
-        // Copy everything now: the player may select another driver meanwhile.
         final Driver driver = current;
-        final int experience = experienceBar.getValue();
-        final int racecraft = racecraftBar.getValue();
-        final int pace = paceBar.getValue();
-        final int awareness = awarenessBar.getValue();
-
-        saving = true;
+        driver.setRatings(experienceBar.getValue(), racecraftBar.getValue(),
+                paceBar.getValue(), awarenessBar.getValue());
+        experienceBar.setChanged(false);
+        racecraftBar.setChanged(false);
+        paceBar.setChanged(false);
+        awarenessBar.setChanged(false);
         updateButtons();
-
-        new SwingWorker<Void, Void>() {
-            @Override
-            protected Void doInBackground() throws Exception {
-                driverRepository.updateRatings(driver.getDriverId(),
-                        experience, racecraft, pace, awareness);
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                saving = false;
-                try {
-                    get(); // throws if the save failed
-                    driver.setRatings(experience, racecraft, pace, awareness);
-                    if (driver == current) {
-                        // The saved values are now the shown ones: numbers turn white.
-                        experienceBar.setChanged(false);
-                        racecraftBar.setChanged(false);
-                        paceBar.setChanged(false);
-                        awarenessBar.setChanged(false);
-                    }
-                } catch (Exception e) {
-                    Throwable cause = e instanceof ExecutionException && e.getCause() != null
-                            ? e.getCause() : e;
-                    cause.printStackTrace();
-                    JOptionPane.showMessageDialog(DriversPanel.this,
-                            "The ratings could not be saved.\n" + cause.getMessage(),
-                            "Error", JOptionPane.ERROR_MESSAGE);
-                }
-                updateButtons();
-            }
-        }.execute();
     }
 }
